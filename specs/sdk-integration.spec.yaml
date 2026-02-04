@@ -1,0 +1,247 @@
+# SDK Integration Specification
+# Files: projects/{name}/sdk.sdk-integration.yaml
+
+spec_version: "1.0"
+spec_type: sdk-integration
+
+description: |
+  Defines how a project uses Claude/Anthropic SDKs.
+  Documents SDK patterns, API usage, and code references.
+
+fields:
+  project:
+    type: string
+    required: true
+    description: "Project name (must match metadata.project.yaml)"
+
+  sdk_integration_detected:
+    type: boolean
+    required: true
+    description: "Whether SDK integration was found"
+
+  summary:
+    type: string
+    required: false
+    description: "Brief summary of SDK integration approach"
+
+  sdks_used:
+    type: list
+    required: false
+    item_type: object
+    description: "SDKs used by this project"
+    item_fields:
+      name:
+        type: enum
+        required: true
+        enum_values:
+          - "anthropic-python"
+          - "anthropic-typescript"
+          - "anthropic-go"
+          - "anthropic-rust"
+          - "claude-agents-sdk"
+          - "other"
+        description: "SDK name"
+
+      package:
+        type: string
+        required: true
+        description: "Package/import name"
+        example: "anthropic"
+
+      version_constraint:
+        type: string
+        required: false
+        description: "Version constraint if specified"
+        example: ">=0.25.0"
+
+      import_reference:
+        type: object
+        required: true
+        description: "Where SDK is imported"
+        fields:
+          path:
+            type: string
+            required: true
+          lines:
+            type: list
+            required: true
+            item_type: integer
+          snippet:
+            type: string
+            required: true
+
+  sdk_usage:
+    type: list
+    required: false
+    item_type: object
+    description: "SDK usage patterns found"
+    item_fields:
+      id:
+        type: string
+        required: true
+        description: "Unique identifier"
+
+      sdk:
+        type: string
+        required: true
+        description: "Which SDK (matches sdks_used.name)"
+
+      pattern:
+        type: enum
+        required: true
+        enum_values:
+          - "messages-create"
+          - "messages-stream"
+          - "tool-use"
+          - "vision"
+          - "agent-create"
+          - "agent-run"
+          - "conversation-management"
+          - "error-handling"
+          - "rate-limiting"
+          - "custom"
+        description: "SDK usage pattern category"
+
+      description:
+        type: string
+        required: true
+        description: "What this usage does"
+
+      reference:
+        type: object
+        required: true
+        description: "Code reference"
+
+      api_methods:
+        type: list
+        required: false
+        item_type: string
+        description: "SDK methods/functions called"
+        example: ["client.messages.create", "client.messages.stream"]
+
+      parameters:
+        type: list
+        required: false
+        item_type: object
+        description: "Notable parameters used"
+        item_fields:
+          name:
+            type: string
+            required: true
+          value_type:
+            type: string
+            required: true
+          purpose:
+            type: string
+            required: false
+          example_value:
+            type: string
+            required: false
+
+      snippet:
+        type: string
+        required: true
+        format: multiline
+
+      notes:
+        type: string
+        required: false
+
+      checklist_refs:
+        type: list
+        required: false
+        item_type: string
+        description: "Related checklist items"
+
+  # Agent SDK specific (if claude-agents-sdk is used)
+  agents_sdk_features:
+    type: object
+    required: false
+    description: "Claude Agents SDK specific features"
+    fields:
+      agent_configuration:
+        type: object
+        required: false
+        fields:
+          model_selection:
+            type: boolean
+          system_prompt_customization:
+            type: boolean
+          tool_registration:
+            type: boolean
+          max_turns_config:
+            type: boolean
+          reference:
+            type: object
+
+      tool_patterns:
+        type: list
+        required: false
+        item_type: object
+        item_fields:
+          tool_type:
+            type: enum
+            enum_values: ["function", "computer-use", "bash", "text-editor", "mcp", "custom"]
+          description:
+            type: string
+          reference:
+            type: object
+          snippet:
+            type: string
+
+      conversation_handling:
+        type: object
+        required: false
+        fields:
+          session_persistence:
+            type: boolean
+          history_management:
+            type: boolean
+          context_windowing:
+            type: boolean
+          reference:
+            type: object
+
+  patterns_summary:
+    type: object
+    required: false
+    description: "Summary of patterns used"
+    dynamic_keys: true
+    value_type: boolean
+
+template: |
+  # {project} - SDK Integration Analysis
+  # Spec: specs/sdk-integration.spec.yaml
+
+  project: "{project}"
+  sdk_integration_detected: false  # Set to true if found
+
+  summary: ""
+
+  sdks_used: []
+  # - name: "anthropic-python"
+  #   package: "anthropic"
+  #   version_constraint: ""
+  #   import_reference:
+  #     path: ""
+  #     lines: [0, 0]
+  #     snippet: ""
+
+  sdk_usage: []
+  # - id: ""
+  #   sdk: ""
+  #   pattern: ""
+  #   description: ""
+  #   reference:
+  #     repository: ""
+  #     commit: ""
+  #     path: ""
+  #     lines: [0, 0]
+  #   api_methods: []
+  #   parameters: []
+  #   snippet: |
+  #     ...
+
+  agents_sdk_features: {}
+
+  patterns_summary: {}

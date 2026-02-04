@@ -1,0 +1,36 @@
+# Project Metadata Template
+# Spec: specs/project.spec.yaml
+#
+# Instructions:
+# 1. Copy this directory: cp -r projects/_template projects/{project-name}
+# 2. Fill in all fields marked with TODO
+# 3. Run: ./scripts/verify_yamls.py projects/{project-name}/
+
+name: "_template"  # TODO: Change to project name (must match directory name)
+display_name: "Project Display Name"  # TODO: Human-readable name
+repository: "https://github.com/org/repo"  # TODO: HTTPS URL (not SSH)
+description: "Brief description of the project"  # TODO: 1-2 sentences
+analyzed_commit: "0000000000000000000000000000000000000000"  # TODO: Full 40-char SHA
+analyzed_at: "YYYY-MM-DD"  # TODO: Date of analysis
+
+# Optional fields
+website: ""  # Project website if different from repo
+documentation: ""  # Documentation URL
+license: ""  # e.g., MIT, Apache-2.0
+primary_language: ""  # e.g., Python, TypeScript
+languages: []  # e.g., [Python, TypeScript, Rust]
+tags: []  # e.g., [cli, vscode-extension, coding-assistant]
+
+# Integration types detected (update as you analyze)
+# Valid values: cli, sdk, skills, plugins, marketplace, mcp
+integration_types: []
+
+# Analysis status
+# Valid values: pending, minimal, in-progress, comprehensive
+analysis_status: "pending"
+
+# Notes about the project or analysis
+notes: ""
+
+# Related projects in this repository
+related_projects: []

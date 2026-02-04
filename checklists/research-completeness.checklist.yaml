@@ -1,0 +1,159 @@
+# Research Completeness Checklist
+# Meta-checklist for evaluating analysis quality
+
+checklist_id: research-completeness
+version: "1.0"
+description: |
+  Checklist for evaluating the completeness and quality
+  of a project's integration analysis.
+
+categories:
+  minimal_requirements:
+    description: "Minimum requirements for 'minimal' status"
+    items:
+      - id: metadata-exists
+        description: "metadata.project.yaml exists and is valid"
+        required: true
+
+      - id: repo-identified
+        description: "Repository URL is correct and accessible"
+        required: true
+
+      - id: commit-pinned
+        description: "Analysis is pinned to specific commit"
+        required: true
+
+      - id: integration-type-identified
+        description: "At least one integration type identified (CLI, SDK, etc.)"
+        required: true
+
+      - id: one-code-reference
+        description: "At least one code reference with snippet"
+        required: true
+
+      - id: yaml-valid
+        description: "All YAML files pass validation"
+        required: true
+
+  comprehensive_requirements:
+    description: "Requirements for 'comprehensive' status"
+    items:
+      - id: cli-checklist-complete
+        description: "CLI flags checklist fully investigated (if CLI used)"
+        condition: "integration_types contains 'cli'"
+
+      - id: sdk-checklist-complete
+        description: "SDK features checklist fully investigated (if SDK used)"
+        condition: "integration_types contains 'sdk'"
+
+      - id: skills-checklist-complete
+        description: "Skills/plugins checklist investigated"
+        condition: "always"
+
+      - id: all-invocations-documented
+        description: "All CLI invocations found and documented"
+        condition: "integration_types contains 'cli'"
+
+      - id: all-sdk-usage-documented
+        description: "All SDK usage patterns documented"
+        condition: "integration_types contains 'sdk'"
+
+      - id: cross-references-added
+        description: "Cross-references to similar projects added"
+        condition: "always"
+
+      - id: notes-file-exists
+        description: "notes.md with analysis observations exists"
+        condition: "always"
+
+  code_reference_quality:
+    description: "Quality criteria for code references"
+    items:
+      - id: commit-is-full-sha
+        description: "Commit is full 40-character SHA"
+        required: true
+
+      - id: lines-are-accurate
+        description: "Line numbers match actual code"
+        required: true
+
+      - id: snippet-is-verbatim
+        description: "Snippet matches source exactly"
+        required: true
+
+      - id: function-class-noted
+        description: "Function/class context is provided"
+        required: false
+        recommended: true
+
+      - id: language-specified
+        description: "Programming language is specified"
+        required: false
+        recommended: true
+
+  documentation_quality:
+    description: "Documentation quality criteria"
+    items:
+      - id: descriptions-are-clear
+        description: "All descriptions are clear and specific"
+        required: true
+
+      - id: investigate-questions-answered
+        description: "Checklist 'investigate' questions are answered"
+        required: false
+        recommended: true
+
+      - id: patterns-summarized
+        description: "Integration patterns are summarized"
+        required: false
+        recommended: true
+
+      - id: comparison-notes
+        description: "Comparison to other projects noted"
+        required: false
+        recommended: true
+
+  verification:
+    description: "Verification steps"
+    items:
+      - id: submodule-at-commit
+        description: "Submodule is at documented commit"
+        verification: "cd submodules/{project} && git rev-parse HEAD"
+
+      - id: snippets-verified
+        description: "Code snippets verified against source"
+        verification: "scripts/verify_snippets.py projects/{project}/"
+
+      - id: yaml-schema-valid
+        description: "YAML files conform to specs"
+        verification: "scripts/verify_yamls.py projects/{project}/"
+
+      - id: links-valid
+        description: "All repository links are valid"
+        verification: "scripts/verify_links.py projects/{project}/"
+
+# Status determination rules
+status_rules:
+  pending:
+    description: "No analysis started"
+    criteria:
+      - "metadata.project.yaml does not exist OR"
+      - "analysis_status is 'pending'"
+
+  minimal:
+    description: "Basic analysis complete"
+    criteria:
+      - "All minimal_requirements items satisfied"
+
+  in_progress:
+    description: "Analysis ongoing"
+    criteria:
+      - "minimal_requirements satisfied"
+      - "Some but not all comprehensive_requirements satisfied"
+
+  comprehensive:
+    description: "Full analysis complete"
+    criteria:
+      - "All minimal_requirements satisfied"
+      - "All applicable comprehensive_requirements satisfied"
+      - "All verification items pass"

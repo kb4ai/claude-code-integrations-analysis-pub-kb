@@ -1,0 +1,77 @@
+# CLI Integration Analysis Template
+# Spec: specs/cli-integration.spec.yaml
+#
+# Delete this file if the project does NOT use Claude Code CLI.
+# Otherwise, document all CLI invocations found.
+
+project: "_template"  # TODO: Must match metadata.project.yaml name
+cli_integration_detected: false  # TODO: Set to true if CLI usage found
+
+summary: ""  # TODO: Brief summary of CLI integration approach
+
+# Document each CLI invocation found
+invocations: []
+  # Example invocation entry:
+  # - id: main-prompt-invocation
+  #   description: "Primary method for sending prompts to Claude"
+  #
+  #   reference:
+  #     repository: "https://github.com/org/repo"
+  #     commit: "abc123..."  # Full 40-char SHA
+  #     path: "src/claude/client.py"
+  #     lines: [142, 158]
+  #     function: "invoke_claude"
+  #     class: "ClaudeClient"
+  #     language: "python"
+  #
+  #   command_pattern: "claude --session {uuid} --output-format streaming-json -p {prompt}"
+  #
+  #   flags_used:
+  #     - flag: "--session"
+  #       value_type: "uuid"
+  #       purpose: "Session persistence for multi-turn conversations"
+  #       checklist_ref: "cli-flags.checklist.yaml#session-uuid"
+  #
+  #     - flag: "--output-format"
+  #       value_type: "enum"
+  #       value_options: ["text", "json", "streaming-json"]
+  #       purpose: "Get structured streaming output for real-time display"
+  #       checklist_ref: "cli-flags.checklist.yaml#output-format"
+  #
+  #     - flag: "-p"
+  #       value_type: "string"
+  #       purpose: "Non-interactive prompt input"
+  #       checklist_ref: "cli-flags.checklist.yaml#print-prompt"
+  #
+  #   snippet: |
+  #     def invoke_claude(self, prompt: str) -> str:
+  #         cmd = [
+  #             "claude",
+  #             "--session", self.session_id,
+  #             "--output-format", "streaming-json",
+  #             "-p", prompt
+  #         ]
+  #         result = subprocess.run(cmd, capture_output=True, text=True)
+  #         return self._parse_response(result.stdout)
+  #
+  #   environment_variables:
+  #     - name: "ANTHROPIC_API_KEY"
+  #       purpose: "API authentication"
+  #
+  #   notes: "Uses subprocess.run for synchronous execution"
+  #
+  #   related_invocations:
+  #     - "projects/other-project/cli.cli-integration.yaml#similar-invocation"
+
+# Summary of all flags used (quick reference)
+flags_summary: {}
+  # Example:
+  # "--session":
+  #   used: true
+  #   invocation_ids: ["main-prompt-invocation"]
+  #   notes: "Used for all multi-turn conversations"
+  #
+  # "--dangerously-skip-permissions":
+  #   used: false
+  #   invocation_ids: []
+  #   notes: "Not used - permissions handled interactively"

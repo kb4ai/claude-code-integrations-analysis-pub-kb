@@ -1,0 +1,211 @@
+# CLI Integration Specification
+# Files: projects/{name}/cli.cli-integration.yaml
+
+spec_version: "1.0"
+spec_type: cli-integration
+
+description: |
+  Defines how a project invokes Claude Code CLI.
+  Documents command patterns, flags used, and code references.
+
+fields:
+  # Top-level metadata
+  project:
+    type: string
+    required: true
+    description: "Project name (must match metadata.project.yaml)"
+
+  cli_integration_detected:
+    type: boolean
+    required: true
+    description: "Whether CLI integration was found"
+
+  summary:
+    type: string
+    required: false
+    description: "Brief summary of CLI integration approach"
+
+  # Main data structure
+  invocations:
+    type: list
+    required: false  # Required if cli_integration_detected is true
+    item_type: object
+    description: "List of CLI invocation patterns found"
+    item_fields:
+      id:
+        type: string
+        required: true
+        description: "Unique identifier for this invocation"
+        example: "main-prompt-invocation"
+
+      description:
+        type: string
+        required: true
+        description: "What this invocation does"
+
+      reference:
+        type: object
+        required: true
+        description: "Code reference (see code-reference.spec.yaml)"
+        fields:
+          repository:
+            type: string
+            required: true
+            format: url
+          commit:
+            type: string
+            required: true
+            format: git-sha
+          path:
+            type: string
+            required: true
+          lines:
+            type: list
+            required: true
+            item_type: integer
+            min_items: 2
+            max_items: 2
+          function:
+            type: string
+            required: false
+          class:
+            type: string
+            required: false
+          language:
+            type: string
+            required: false
+
+      command_pattern:
+        type: string
+        required: true
+        description: "Command pattern with placeholders"
+        example: "claude --session {uuid} -p {prompt}"
+
+      flags_used:
+        type: list
+        required: true
+        item_type: object
+        description: "Flags used in this invocation"
+        item_fields:
+          flag:
+            type: string
+            required: true
+            description: "Flag name including dashes"
+            example: "--session"
+          value_type:
+            type: enum
+            required: true
+            enum_values: ["none", "string", "uuid", "path", "integer", "json", "enum"]
+          value_options:
+            type: list
+            required: false
+            item_type: string
+            description: "For enum type, list valid values"
+          purpose:
+            type: string
+            required: true
+            description: "What this flag does in this context"
+          checklist_ref:
+            type: string
+            required: false
+            description: "Reference to checklist item"
+            example: "cli-flags.checklist.yaml#session-management"
+
+      snippet:
+        type: string
+        required: true
+        format: multiline
+        description: "Verbatim code snippet"
+
+      environment_variables:
+        type: list
+        required: false
+        item_type: object
+        description: "Environment variables used"
+        item_fields:
+          name:
+            type: string
+            required: true
+          purpose:
+            type: string
+            required: true
+          default:
+            type: string
+            required: false
+
+      notes:
+        type: string
+        required: false
+        description: "Additional notes about this invocation"
+
+      related_invocations:
+        type: list
+        required: false
+        item_type: string
+        description: "IDs of related invocations in this or other projects"
+
+  # Aggregated flag usage (for quick lookup)
+  flags_summary:
+    type: object
+    required: false
+    description: "Summary of all flags used across invocations"
+    dynamic_keys: true
+    value_type: object
+    value_fields:
+      used:
+        type: boolean
+      invocation_ids:
+        type: list
+        item_type: string
+      notes:
+        type: string
+
+# Known Claude Code CLI flags for reference
+known_flags:
+  session_management:
+    - "--session"
+    - "--resume"
+    - "-c, --continue"
+  input_output:
+    - "-p, --print"
+    - "--output-format"  # text, json, streaming-json
+    - "--verbose"
+  permissions:
+    - "--dangerously-skip-permissions"
+    - "--allowedTools"
+  model_config:
+    - "--model"
+    - "--max-turns"
+    - "--system-prompt"
+  mcp:
+    - "--mcp-config"
+    - "--mcp"
+  misc:
+    - "--help"
+    - "--version"
+    - "--no-color"
+
+template: |
+  # {project} - CLI Integration Analysis
+  # Spec: specs/cli-integration.spec.yaml
+
+  project: "{project}"
+  cli_integration_detected: false  # Set to true if found
+
+  summary: ""
+
+  invocations: []
+  # - id: ""
+  #   description: ""
+  #   reference:
+  #     repository: ""
+  #     commit: ""
+  #     path: ""
+  #     lines: [0, 0]
+  #     function: ""
+  #   command_pattern: ""
+  #   flags_used: []
+  #   snippet: |
+  #     ...
+
+  flags_summary: {}

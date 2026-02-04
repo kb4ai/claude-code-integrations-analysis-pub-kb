@@ -1,0 +1,181 @@
+# CLI Flags Checklist
+# Research criteria for CLI integration analysis
+
+checklist_id: cli-flags
+version: "1.0"
+description: |
+  Checklist of Claude Code CLI flags and patterns to investigate
+  when analyzing a project's CLI integration.
+
+categories:
+  session_management:
+    description: "Session persistence and continuation"
+    items:
+      - id: session-uuid
+        flag: "--session"
+        description: "Creates or continues a named session"
+        investigate:
+          - "How is session UUID generated?"
+          - "Where is session state stored?"
+          - "Is session reused across invocations?"
+
+      - id: resume-session
+        flag: "--resume"
+        description: "Resumes the most recent session"
+        investigate:
+          - "When is --resume used vs --session?"
+          - "How is 'most recent' determined?"
+
+      - id: continue-flag
+        flag: "-c, --continue"
+        description: "Continue previous conversation"
+        investigate:
+          - "Difference from --resume?"
+          - "Session selection logic?"
+
+  input_output:
+    description: "Input and output handling"
+    items:
+      - id: print-prompt
+        flag: "-p, --print"
+        description: "Non-interactive prompt mode"
+        investigate:
+          - "How is prompt constructed?"
+          - "Multi-line prompt handling?"
+          - "Escaping/quoting strategy?"
+
+      - id: output-format
+        flag: "--output-format"
+        description: "Output format selection"
+        values: ["text", "json", "streaming-json"]
+        investigate:
+          - "Which format is used?"
+          - "How is streaming-json parsed?"
+          - "JSON schema expectations?"
+
+      - id: verbose
+        flag: "--verbose"
+        description: "Verbose output mode"
+        investigate:
+          - "Is verbose mode used for debugging?"
+          - "How is verbose output handled?"
+
+  permissions:
+    description: "Permission and security settings"
+    items:
+      - id: skip-permissions
+        flag: "--dangerously-skip-permissions"
+        description: "Bypasses permission prompts"
+        investigate:
+          - "Under what conditions is this used?"
+          - "Security implications documented?"
+          - "User consent mechanism?"
+        security_note: "High-risk flag - document carefully"
+
+      - id: allowed-tools
+        flag: "--allowedTools"
+        description: "Restricts available tools"
+        investigate:
+          - "Which tools are allowed/denied?"
+          - "How is tool list constructed?"
+          - "Default tool restrictions?"
+
+  model_configuration:
+    description: "Model and execution settings"
+    items:
+      - id: model-selection
+        flag: "--model"
+        description: "Model selection"
+        investigate:
+          - "Which models are supported/used?"
+          - "Model selection logic?"
+          - "Fallback models?"
+
+      - id: max-turns
+        flag: "--max-turns"
+        description: "Maximum conversation turns"
+        investigate:
+          - "Default value used?"
+          - "How is limit enforced?"
+          - "Behavior at limit?"
+
+      - id: system-prompt
+        flag: "--system-prompt"
+        description: "Custom system prompt"
+        investigate:
+          - "Is custom system prompt used?"
+          - "How is it constructed?"
+          - "Merged with defaults?"
+
+  mcp_integration:
+    description: "MCP (Model Context Protocol) settings"
+    items:
+      - id: mcp-config
+        flag: "--mcp-config"
+        description: "MCP configuration file"
+        investigate:
+          - "Is MCP used?"
+          - "Which MCP servers?"
+          - "Configuration format?"
+
+      - id: mcp-flag
+        flag: "--mcp"
+        description: "MCP-related flag"
+        investigate:
+          - "MCP enable/disable?"
+          - "Interaction with --mcp-config?"
+
+  environment_variables:
+    description: "Environment variable usage"
+    items:
+      - id: api-key
+        env: "ANTHROPIC_API_KEY"
+        description: "API key for Anthropic"
+        investigate:
+          - "How is API key provided?"
+          - "Key rotation support?"
+
+      - id: claude-code-env
+        env: "CLAUDE_CODE_*"
+        description: "Claude Code specific env vars"
+        investigate:
+          - "Which CLAUDE_CODE_* vars are used?"
+          - "Configuration via environment?"
+
+  invocation_patterns:
+    description: "How CLI is invoked"
+    items:
+      - id: subprocess-spawn
+        description: "Process spawning method"
+        investigate:
+          - "subprocess.run vs Popen vs spawn?"
+          - "Shell=True or shell=False?"
+          - "Working directory handling?"
+
+      - id: output-capture
+        description: "Output capture strategy"
+        investigate:
+          - "stdout/stderr handling?"
+          - "Real-time streaming?"
+          - "Timeout handling?"
+
+      - id: error-handling
+        description: "Error handling approach"
+        investigate:
+          - "Exit code checking?"
+          - "Error message parsing?"
+          - "Retry logic?"
+
+# Summary statistics template
+summary_template: |
+  ## CLI Flags Analysis Summary for {project}
+
+  | Category | Items Checked | Items Found | Coverage |
+  |----------|---------------|-------------|----------|
+  | Session Management | {session_total} | {session_found} | {session_pct}% |
+  | Input/Output | {io_total} | {io_found} | {io_pct}% |
+  | Permissions | {perm_total} | {perm_found} | {perm_pct}% |
+  | Model Config | {model_total} | {model_found} | {model_pct}% |
+  | MCP | {mcp_total} | {mcp_found} | {mcp_pct}% |
+  | Environment | {env_total} | {env_found} | {env_pct}% |
+  | Patterns | {pattern_total} | {pattern_found} | {pattern_pct}% |

@@ -1,0 +1,181 @@
+# Code Reference Specification
+# Files: projects/{name}/*.code-reference.yaml
+
+spec_version: "1.0"
+spec_type: code-reference
+
+description: |
+  Defines the structure for code references.
+  Used for additional code snippets not fitting other specs,
+  or for collections of related references.
+
+fields:
+  project:
+    type: string
+    required: true
+    description: "Project name"
+
+  topic:
+    type: string
+    required: true
+    description: "Topic/category of these references"
+    example: "error-handling"
+
+  description:
+    type: string
+    required: false
+    description: "Description of what these references document"
+
+  references:
+    type: list
+    required: true
+    item_type: object
+    description: "List of code references"
+    item_fields:
+      id:
+        type: string
+        required: true
+        description: "Unique identifier within this file"
+
+      title:
+        type: string
+        required: true
+        description: "Brief title for this reference"
+
+      description:
+        type: string
+        required: false
+        description: "What this code does"
+
+      claim:
+        type: string
+        required: false
+        description: "Specific claim this reference supports"
+        example: "Goose uses streaming JSON output for real-time feedback"
+
+      # Location fields
+      repository:
+        type: string
+        required: true
+        format: url
+        description: "Repository URL (HTTPS)"
+
+      commit:
+        type: string
+        required: true
+        format: git-sha
+        length: 40
+        description: "Full 40-character commit SHA"
+
+      path:
+        type: string
+        required: true
+        description: "File path relative to repository root"
+
+      lines:
+        type: list
+        required: true
+        item_type: integer
+        min_items: 2
+        max_items: 2
+        description: "[start_line, end_line] inclusive"
+
+      # Context fields
+      function:
+        type: string
+        required: false
+        description: "Function containing this code"
+
+      class:
+        type: string
+        required: false
+        description: "Class containing this code"
+
+      module:
+        type: string
+        required: false
+        description: "Module/namespace"
+
+      language:
+        type: enum
+        required: false
+        enum_values: ["python", "typescript", "javascript", "go", "rust", "java", "kotlin", "swift", "c", "cpp", "csharp", "ruby", "shell", "other"]
+        description: "Programming language"
+
+      # The code itself
+      snippet:
+        type: string
+        required: true
+        format: multiline
+        description: "Verbatim code snippet"
+
+      # Annotations
+      highlights:
+        type: list
+        required: false
+        item_type: object
+        description: "Specific lines/sections to highlight"
+        item_fields:
+          lines:
+            type: list
+            item_type: integer
+          note:
+            type: string
+
+      notes:
+        type: string
+        required: false
+        description: "Additional notes"
+
+      tags:
+        type: list
+        required: false
+        item_type: string
+        description: "Tags for categorization"
+
+      # Cross-references
+      related_refs:
+        type: list
+        required: false
+        item_type: string
+        description: "IDs of related references (this file or others)"
+        example: ["cli.cli-integration.yaml#main-invocation"]
+
+      checklist_refs:
+        type: list
+        required: false
+        item_type: string
+        description: "Checklist items this supports"
+
+# Helper: GitHub permalink format
+github_permalink_format: |
+  https://github.com/{owner}/{repo}/blob/{commit}/{path}#L{start}-L{end}
+
+# Validation rules
+validation:
+  - rule: "commit must be exactly 40 characters"
+  - rule: "lines[0] <= lines[1]"
+  - rule: "snippet should match actual code at commit+path+lines"
+
+template: |
+  # {project} - {topic} Code References
+  # Spec: specs/code-reference.spec.yaml
+
+  project: "{project}"
+  topic: "{topic}"
+  description: ""
+
+  references:
+    - id: ""
+      title: ""
+      description: ""
+      repository: "https://github.com/org/repo"
+      commit: "0000000000000000000000000000000000000000"
+      path: ""
+      lines: [0, 0]
+      function: ""
+      language: "python"
+      snippet: |
+        # code here
+      notes: ""
+      tags: []

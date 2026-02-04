@@ -1,0 +1,29 @@
+# Temporary directory for cloning repositories during analysis
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+.eggs/
+
+# Virtual environments (use uv instead)
+venv/
+.venv/
+
+# Generated reports (regenerate with scripts)
+# Keep committed reports in reports/committed/
+reports/generated/
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

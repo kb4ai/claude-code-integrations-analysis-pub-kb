@@ -1,0 +1,143 @@
+# Project Metadata Specification
+# Files: projects/{name}/metadata.project.yaml
+
+spec_version: "1.0"
+spec_type: project
+
+description: |
+  Defines metadata for a project being analyzed.
+  Every project directory must have a metadata.project.yaml file.
+
+fields:
+  # Required fields
+  name:
+    type: string
+    required: true
+    description: "Project name (should match directory name)"
+    example: "goose"
+
+  display_name:
+    type: string
+    required: true
+    description: "Human-readable project name"
+    example: "Goose (Block)"
+
+  repository:
+    type: string
+    required: true
+    format: url
+    description: "Primary repository URL (HTTPS)"
+    example: "https://github.com/block/goose"
+
+  description:
+    type: string
+    required: true
+    description: "Brief description of the project"
+    example: "AI-powered coding assistant by Block"
+
+  analyzed_commit:
+    type: string
+    required: true
+    format: git-sha
+    length: 40
+    description: "Full SHA of commit at which analysis was performed"
+    example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+
+  analyzed_at:
+    type: string
+    required: true
+    format: iso8601-date
+    description: "Date analysis was performed"
+    example: "2026-02-03"
+
+  # Optional fields
+  website:
+    type: string
+    required: false
+    format: url
+    description: "Project website if different from repository"
+
+  documentation:
+    type: string
+    required: false
+    format: url
+    description: "Documentation URL"
+
+  license:
+    type: string
+    required: false
+    description: "Project license"
+    example: "MIT"
+
+  primary_language:
+    type: string
+    required: false
+    description: "Primary programming language"
+    example: "Python"
+
+  languages:
+    type: list
+    required: false
+    item_type: string
+    description: "All programming languages used"
+    example: ["Python", "TypeScript", "Rust"]
+
+  tags:
+    type: list
+    required: false
+    item_type: string
+    description: "Categorization tags"
+    example: ["cli", "vscode-extension", "coding-assistant"]
+
+  integration_types:
+    type: list
+    required: false
+    item_type: enum
+    enum_values: ["cli", "sdk", "skills", "plugins", "marketplace", "mcp"]
+    description: "Types of Claude Code integration detected"
+    example: ["cli", "sdk"]
+
+  analysis_status:
+    type: enum
+    required: false
+    enum_values: ["pending", "minimal", "in-progress", "comprehensive"]
+    default: "pending"
+    description: "Current analysis completeness"
+
+  notes:
+    type: string
+    required: false
+    description: "Additional notes about the project or analysis"
+
+  updated_at:
+    type: string
+    required: false
+    format: iso8601-date
+    description: "Date of last analysis update"
+
+  related_projects:
+    type: list
+    required: false
+    item_type: string
+    description: "Names of related projects in this repository"
+    example: ["aider", "continue"]
+
+# Template for creating new project metadata
+template: |
+  # {display_name} - Project Metadata
+  # Spec: specs/project.spec.yaml
+
+  name: "{name}"
+  display_name: "{display_name}"
+  repository: "https://github.com/org/repo"
+  description: "Brief description"
+  analyzed_commit: "0000000000000000000000000000000000000000"
+  analyzed_at: "YYYY-MM-DD"
+
+  # Optional
+  primary_language: ""
+  languages: []
+  tags: []
+  integration_types: []
+  analysis_status: "pending"
+  notes: ""

@@ -1,0 +1,213 @@
+# SDK Features Checklist
+# Research criteria for SDK integration analysis
+
+checklist_id: sdk-features
+version: "1.0"
+description: |
+  Checklist of Anthropic/Claude SDK features to investigate
+  when analyzing a project's SDK integration.
+
+categories:
+  sdk_identification:
+    description: "Identify which SDK(s) are used"
+    items:
+      - id: anthropic-python
+        package: "anthropic"
+        language: "Python"
+        investigate:
+          - "Version constraint?"
+          - "Import patterns?"
+
+      - id: anthropic-typescript
+        package: "@anthropic-ai/sdk"
+        language: "TypeScript/JavaScript"
+        investigate:
+          - "Version constraint?"
+          - "ESM vs CommonJS?"
+
+      - id: claude-agents-sdk
+        package: "claude-agents"
+        description: "Official Claude Agents SDK"
+        investigate:
+          - "Which agent features used?"
+          - "Tool registration patterns?"
+
+      - id: other-sdk
+        description: "Other Anthropic-related SDK"
+        investigate:
+          - "Community SDK?"
+          - "Wrapper library?"
+
+  messages_api:
+    description: "Messages API usage patterns"
+    items:
+      - id: messages-create
+        method: "client.messages.create"
+        description: "Synchronous message creation"
+        investigate:
+          - "Parameters used?"
+          - "Response handling?"
+
+      - id: messages-stream
+        method: "client.messages.stream"
+        description: "Streaming message creation"
+        investigate:
+          - "Stream event handling?"
+          - "Partial response processing?"
+          - "Error recovery in stream?"
+
+      - id: model-parameter
+        parameter: "model"
+        investigate:
+          - "Which models specified?"
+          - "Model selection logic?"
+
+      - id: max-tokens
+        parameter: "max_tokens"
+        investigate:
+          - "Token limits used?"
+          - "Dynamic adjustment?"
+
+      - id: system-parameter
+        parameter: "system"
+        investigate:
+          - "System prompt content?"
+          - "Dynamic system prompts?"
+
+      - id: temperature
+        parameter: "temperature"
+        investigate:
+          - "Temperature values?"
+          - "Use case for non-default?"
+
+  tool_use:
+    description: "Tool use (function calling) patterns"
+    items:
+      - id: tools-parameter
+        parameter: "tools"
+        description: "Tool definitions"
+        investigate:
+          - "How are tools defined?"
+          - "Tool schema structure?"
+          - "Dynamic tool generation?"
+
+      - id: tool-choice
+        parameter: "tool_choice"
+        description: "Tool selection control"
+        investigate:
+          - "auto vs required vs specific?"
+          - "When is each used?"
+
+      - id: tool-result-handling
+        description: "Processing tool call results"
+        investigate:
+          - "Tool execution logic?"
+          - "Result formatting?"
+          - "Error handling?"
+
+      - id: multi-turn-tools
+        description: "Multi-turn tool conversations"
+        investigate:
+          - "Conversation continuation?"
+          - "Tool result injection?"
+
+  agents_sdk_specific:
+    description: "Claude Agents SDK specific features"
+    items:
+      - id: agent-creation
+        description: "Agent instantiation"
+        investigate:
+          - "Agent configuration options?"
+          - "Default vs custom agents?"
+
+      - id: agent-tools
+        description: "Agent tool registration"
+        investigate:
+          - "Built-in tools used?"
+          - "Custom tool registration?"
+          - "Tool permissions?"
+
+      - id: agent-run
+        description: "Agent execution"
+        investigate:
+          - "Run parameters?"
+          - "Streaming vs batch?"
+          - "Turn management?"
+
+      - id: computer-use
+        description: "Computer use tools"
+        investigate:
+          - "Screen interaction?"
+          - "Browser automation?"
+
+      - id: bash-tool
+        description: "Bash/shell tool"
+        investigate:
+          - "Command execution?"
+          - "Sandboxing?"
+
+      - id: text-editor
+        description: "Text editor tool"
+        investigate:
+          - "File editing patterns?"
+          - "Edit confirmation?"
+
+  conversation_management:
+    description: "Conversation and context handling"
+    items:
+      - id: message-history
+        description: "Message history management"
+        investigate:
+          - "How is history stored?"
+          - "History truncation?"
+          - "Token counting?"
+
+      - id: context-window
+        description: "Context window management"
+        investigate:
+          - "Window size handling?"
+          - "Overflow strategy?"
+
+      - id: session-persistence
+        description: "Session state persistence"
+        investigate:
+          - "Storage mechanism?"
+          - "Serialization format?"
+
+  error_handling:
+    description: "Error handling patterns"
+    items:
+      - id: api-errors
+        description: "API error handling"
+        investigate:
+          - "Error types caught?"
+          - "Retry logic?"
+          - "Backoff strategy?"
+
+      - id: rate-limiting
+        description: "Rate limit handling"
+        investigate:
+          - "Rate limit detection?"
+          - "Retry-after handling?"
+          - "Request queuing?"
+
+      - id: timeout-handling
+        description: "Timeout management"
+        investigate:
+          - "Timeout configuration?"
+          - "Timeout recovery?"
+
+  authentication:
+    description: "Authentication patterns"
+    items:
+      - id: api-key-handling
+        description: "API key management"
+        investigate:
+          - "Key source (env, config, param)?"
+          - "Key validation?"
+
+      - id: client-init
+        description: "Client initialization"
+        investigate:
+          - "Singleton vs per-request?"
+          - "Configuration options?"

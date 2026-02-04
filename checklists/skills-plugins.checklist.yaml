@@ -1,0 +1,189 @@
+# Skills & Plugins Checklist
+# Research criteria for Skills, Plugins, and Marketplace integration
+
+checklist_id: skills-plugins
+version: "1.0"
+description: |
+  Checklist for investigating Skills, Plugins, and Marketplace
+  integration in Claude Code ecosystem projects.
+
+categories:
+  skills_support:
+    description: "Claude Code Skills integration"
+    items:
+      - id: skills-discovery
+        description: "Skill file discovery"
+        investigate:
+          - "Does it scan ~/.claude/commands/?"
+          - "Does it scan .claude/commands/?"
+          - "Custom skill directories?"
+          - "Skill file extensions (.md)?"
+
+      - id: skills-loading
+        description: "Skill content loading"
+        investigate:
+          - "How are skill files parsed?"
+          - "Frontmatter handling?"
+          - "Markdown processing?"
+
+      - id: skills-invocation
+        description: "Skill invocation mechanism"
+        investigate:
+          - "Slash command support (/<skill>)?"
+          - "Skill argument passing ($ARGUMENTS)?"
+          - "Skill chaining?"
+
+      - id: skills-registration
+        description: "Skill registration with Claude"
+        investigate:
+          - "How are skills presented to Claude?"
+          - "Skill metadata in system prompt?"
+          - "Dynamic skill listing?"
+
+      - id: custom-skills-creation
+        description: "Custom skill creation support"
+        investigate:
+          - "Can users create skills?"
+          - "Skill templates?"
+          - "Skill validation?"
+
+  plugins_support:
+    description: "Claude Code Plugins integration"
+    items:
+      - id: plugin-discovery
+        description: "Plugin discovery mechanism"
+        investigate:
+          - "Plugin directories scanned?"
+          - "Plugin manifest format?"
+          - "Remote plugin registry?"
+
+      - id: plugin-loading
+        description: "Plugin loading and initialization"
+        investigate:
+          - "Plugin lifecycle?"
+          - "Dependency resolution?"
+          - "Version compatibility?"
+
+      - id: plugin-api
+        description: "Plugin API surface"
+        investigate:
+          - "What can plugins extend?"
+          - "Hook points available?"
+          - "Event system?"
+
+      - id: plugin-isolation
+        description: "Plugin isolation/sandboxing"
+        investigate:
+          - "Security boundaries?"
+          - "Resource limits?"
+          - "Permission model?"
+
+  marketplace_integration:
+    description: "Claude Code Marketplace integration"
+    items:
+      - id: marketplace-discovery
+        description: "Marketplace browsing/search"
+        investigate:
+          - "Marketplace URL/endpoint?"
+          - "Search capabilities?"
+          - "Category filtering?"
+
+      - id: marketplace-install
+        description: "Marketplace item installation"
+        investigate:
+          - "Installation mechanism?"
+          - "Version management?"
+          - "Update checking?"
+
+      - id: marketplace-auth
+        description: "Marketplace authentication"
+        investigate:
+          - "Account required?"
+          - "API key for marketplace?"
+          - "Rate limiting?"
+
+      - id: marketplace-publish
+        description: "Publishing to marketplace"
+        investigate:
+          - "Publishing workflow?"
+          - "Validation requirements?"
+          - "Review process?"
+
+  mcp_servers:
+    description: "MCP (Model Context Protocol) server integration"
+    items:
+      - id: mcp-server-discovery
+        description: "MCP server discovery"
+        investigate:
+          - "mcp.json / mcp-config support?"
+          - "Server configuration format?"
+          - "Multiple server support?"
+
+      - id: mcp-server-connection
+        description: "MCP server connection"
+        investigate:
+          - "Connection protocols (stdio, http)?"
+          - "Connection lifecycle?"
+          - "Reconnection handling?"
+
+      - id: mcp-tools
+        description: "MCP tool integration"
+        investigate:
+          - "Tool discovery from MCP?"
+          - "Tool invocation?"
+          - "Tool result handling?"
+
+      - id: mcp-resources
+        description: "MCP resource integration"
+        investigate:
+          - "Resource discovery?"
+          - "Resource access patterns?"
+
+      - id: mcp-prompts
+        description: "MCP prompt integration"
+        investigate:
+          - "Prompt discovery?"
+          - "Prompt invocation?"
+
+  hooks_integration:
+    description: "Hook system integration"
+    items:
+      - id: hooks-discovery
+        description: "Hook discovery"
+        investigate:
+          - "Hook configuration file?"
+          - "Hook registration?"
+
+      - id: hooks-execution
+        description: "Hook execution"
+        investigate:
+          - "Hook trigger points?"
+          - "Hook execution order?"
+          - "Async vs sync hooks?"
+
+      - id: hooks-context
+        description: "Hook context passing"
+        investigate:
+          - "What context is available to hooks?"
+          - "Hook result handling?"
+
+  extension_points:
+    description: "General extensibility patterns"
+    items:
+      - id: config-extension
+        description: "Configuration extension points"
+        investigate:
+          - "Custom config files?"
+          - "Config override mechanism?"
+
+      - id: prompt-extension
+        description: "Prompt/instruction extension"
+        investigate:
+          - "Custom CLAUDE.md support?"
+          - "Prompt injection points?"
+
+      - id: tool-extension
+        description: "Custom tool registration"
+        investigate:
+          - "Tool definition format?"
+          - "Tool execution handler?"
