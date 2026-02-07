@@ -1,0 +1,28 @@
+# Project Metadata: OpenHands
+# Spec: specs/project.spec.yaml
+
+name: "openhands"
+display_name: "OpenHands (All-Hands-AI)"
+repository: "https://github.com/All-Hands-AI/OpenHands"
+description: "Open-source AI coding agent platform with Claude as default model via LiteLLM, supporting prompt caching, multi-provider routing, and A/B testing"
+analyzed_commit: "0d13c57d9f9eaa69aebec2c12eef8806548c6ea2"
+analyzed_at: "2026-02-07"
+
+website: "https://app.all-hands.dev"
+documentation: "https://docs.all-hands.dev"
+license: "MIT"
+primary_language: "Python"
+languages: [Python, TypeScript]
+tags: [coding-agent, platform, multi-provider, ab-testing]
+
+integration_types: [sdk]
+
+analysis_status: "comprehensive"
+
+notes: |
+  Default model: claude-opus-4-5-20251101. Uses LiteLLM with custom OpenHands proxy
+  (openhands/claude-* → litellm_proxy/claude-*). Extensive model-specific handling:
+  extended thinking disabled for Opus 4.1, temperature+top_p conflict resolution,
+  max output 64000 for Sonnet models. Runs production A/B tests (Claude 4 vs GPT-5).
+
+related_projects: ["aider", "continue"]

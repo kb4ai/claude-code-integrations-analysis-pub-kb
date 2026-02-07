@@ -1,0 +1,141 @@
+# SDK Integration Analysis: OpenHands
+# Spec: specs/sdk-integration.spec.yaml
+
+project: "openhands"
+sdk_integration_detected: true
+
+summary: |
+  Uses LiteLLM for Anthropic API access with Claude Opus 4.5 as default model.
+  Multi-provider support (direct, OpenRouter, Bedrock, OpenHands proxy).
+  Anthropic-specific handling: prompt caching with cache_control breakpoints,
+  extended thinking disabled for Opus 4.1, temperature+top_p conflict resolution.
+
+sdks_used:
+  - name: "litellm"
+    package: "litellm"
+    version_constraint: ">=1.74.3,!=1.64.4,!=1.67.*"
+    import_reference:
+      path: "openhands/llm/llm.py"
+      lines: [1, 20]
+      snippet: |
+        import litellm
+
+  - name: "anthropic-python"
+    package: "anthropic[vertex]"
+    version_constraint: "*"
+    import_reference:
+      path: "pyproject.toml"
+      lines: [163, 163]
+      snippet: |
+        anthropic = { extras = ["vertex"], version = "*" }
+
+sdk_usage:
+
+  - id: prompt-caching
+    sdk: "litellm"
+    pattern: "prompt-caching"
+    description: "Anthropic prompt caching with ephemeral cache_control breakpoints"
+
+    reference:
+      repository: "https://github.com/All-Hands-AI/OpenHands"
+      commit: "0d13c57d9f9eaa69aebec2c12eef8806548c6ea2"
+      path: "openhands/memory/conversation_memory.py"
+      lines: [696, 709]
+      function: "apply_prompt_caching"
+      language: "python"
+
+    snippet: |
+      def apply_prompt_caching(self, messages: list[Message]) -> None:
+          if len(messages) > 0 and messages[0].role == 'system':
+              messages[0].content[-1].cache_prompt = True
+          # NOTE: this is only needed for anthropic
+          for message in reversed(messages):
+              if message.role in ('user', 'tool'):
+                  message.content[-1].cache_prompt = True
+                  break
+
+    notes: "Two breakpoints: system message + last user/tool message. Anthropic-specific."
+
+  - id: model-constraints
+    sdk: "litellm"
+    pattern: "model-specific-handling"
+    description: "Claude-specific API parameter constraint handling"
+
+    reference:
+      repository: "https://github.com/All-Hands-AI/OpenHands"
+      commit: "0d13c57d9f9eaa69aebec2c12eef8806548c6ea2"
+      path: "openhands/llm/llm.py"
+      lines: [196, 210]
+      function: "__init__"
+      class: "LLM"
+      language: "python"
+
+    snippet: |
+      # Disable extended thinking for Opus 4.1
+      if 'claude-opus-4-1' in self.config.model.lower():
+          kwargs['thinking'] = {'type': 'disabled'}
+
+      # Opus 4.1, 4.5, and Sonnet 4 cannot accept both temperature and top_p
+      if ('claude-opus-4-1' in _model_lower or 'claude-opus-4-5' in _model_lower
+          or 'claude-sonnet-4' in _model_lower):
+          if 'temperature' in kwargs and 'top_p' in kwargs:
+              kwargs.pop('top_p', None)
+
+    notes: "Extended thinking disabled for Opus 4.1. top_p dropped when temperature set for Claude 4+ models"
+
+  - id: openhands-proxy
+    sdk: "litellm"
+    pattern: "custom-provider"
+    description: "OpenHands provider proxy rewrites to litellm_proxy"
+
+    reference:
+      repository: "https://github.com/All-Hands-AI/OpenHands"
+      commit: "0d13c57d9f9eaa69aebec2c12eef8806548c6ea2"
+      path: "openhands/llm/llm.py"
+      lines: [134, 141]
+      language: "python"
+
+    snippet: |
+      if self.config.model.startswith('openhands/'):
+          model_name = self.config.model.removeprefix('openhands/')
+          self.config.model = f'litellm_proxy/{model_name}'
+          self.config.base_url = _get_openhands_llm_base_url()
+
+    notes: "openhands/claude-* → litellm_proxy/claude-* with custom proxy URL"
+
+  - id: model-versioning
+    sdk: "litellm"
+    pattern: "model-versioning"
+    description: "User settings version to Claude model mapping"
+
+    reference:
+      repository: "https://github.com/All-Hands-AI/OpenHands"
+      commit: "0d13c57d9f9eaa69aebec2c12eef8806548c6ea2"
+      path: "enterprise/server/constants.py"
+      lines: [23, 29]
+      language: "python"
+
+    snippet: |
+      PERSONAL_WORKSPACE_VERSION_TO_MODEL = {
+          1: 'claude-3-5-sonnet-20241022',
+          2: 'claude-3-7-sonnet-20250219',
+          3: 'claude-sonnet-4-20250514',
+          4: 'claude-sonnet-4-20250514',
+          5: 'claude-opus-4-5-20251101',
+      }
+
+    notes: "Shows model evolution: 3.5 Sonnet → 3.7 Sonnet → Sonnet 4 → Opus 4.5"
+
+agents_sdk_features: {}
+
+patterns_summary:
+  messages-stream: true
+  tool-use: true
+  prompt-caching: true
+  extended-thinking: false
+  vision: true
+  ab-testing: true
+  agent-create: false
+  bedrock-support: true
+  openrouter-support: true
+  custom-proxy: true

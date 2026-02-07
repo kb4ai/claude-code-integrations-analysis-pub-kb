@@ -1,0 +1,30 @@
+# Project Metadata: Continue
+# Spec: specs/project.spec.yaml
+
+name: "continue"
+display_name: "Continue.dev"
+repository: "https://github.com/continuedev/continue"
+description: "IDE extension for AI coding assistance with direct Anthropic SDK integration, OpenAI adapter layer, and Vercel AI SDK fallback support"
+analyzed_commit: "d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550"
+analyzed_at: "2026-02-07"
+
+website: "https://continue.dev"
+documentation: "https://docs.continue.dev"
+license: "Apache-2.0"
+primary_language: "TypeScript"
+languages: [TypeScript, Python]
+tags: [ide-extension, vscode, jetbrains, coding-assistant, multi-provider]
+
+integration_types: [sdk]
+
+analysis_status: "comprehensive"
+
+notes: |
+  Continue uses direct Anthropic SDK with a sophisticated adapter pattern:
+  1. Core LLM Layer (core/llm/llms/Anthropic.ts) - low-level SDK with SSE streaming
+  2. OpenAI Adapter (packages/openai-adapters/src/apis/Anthropic.ts) - format conversion
+  3. Vercel AI SDK fallback (@ai-sdk/anthropic)
+  4 caching strategies (no cache, system only, system+tools, optimized).
+  Azure-hosted Anthropic endpoint support.
+
+related_projects: ["cline", "aider"]

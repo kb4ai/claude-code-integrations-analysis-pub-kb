@@ -1,0 +1,28 @@
+# Project Metadata: Aider
+# Spec: specs/project.spec.yaml
+
+name: "aider"
+display_name: "Aider"
+repository: "https://github.com/paul-gauthier/aider"
+description: "AI pair programming CLI tool that uses Claude via LiteLLM abstraction with deep prompt caching, extended thinking, and multi-provider support"
+analyzed_commit: "4bf56b77145b0be593ed48c3c90cdecead217496"
+analyzed_at: "2026-02-07"
+
+website: "https://aider.chat"
+documentation: "https://aider.chat/docs/"
+license: "Apache-2.0"
+primary_language: "Python"
+languages: [Python]
+tags: [cli, coding-assistant, pair-programming, multi-provider]
+
+integration_types: [sdk]
+
+analysis_status: "comprehensive"
+
+notes: |
+  Aider uses LiteLLM as abstraction layer for all LLM providers including Anthropic.
+  Does NOT use Claude Code CLI directly. Deep Anthropic-specific features: prompt caching
+  with cache warming (background keep-alive), extended thinking tokens, Bedrock/Vertex/OpenRouter
+  support. Default model is Claude Sonnet 4 when ANTHROPIC_API_KEY is set.
+
+related_projects: ["continue", "openhands"]

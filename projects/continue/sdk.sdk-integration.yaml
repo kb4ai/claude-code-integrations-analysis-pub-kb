@@ -1,0 +1,155 @@
+# SDK Integration Analysis: Continue
+# Spec: specs/sdk-integration.spec.yaml
+
+project: "continue"
+sdk_integration_detected: true
+
+summary: |
+  Direct Anthropic SDK integration with SSE streaming, 4 caching strategies, extended thinking,
+  tool calling, vision support, and Azure-hosted endpoint detection. Also supports Vercel AI SDK
+  as fallback and includes Bedrock integration via @aws-sdk/client-bedrock-runtime.
+
+sdks_used:
+  - name: "anthropic-typescript"
+    package: "@anthropic-ai/sdk"
+    version_constraint: ">=0.67.0"
+    import_reference:
+      path: "core/llm/llms/Anthropic.ts"
+      lines: [1, 12]
+      snippet: |
+        import {
+          Tool as AnthropicTool, ContentBlockParam, MessageCreateParams,
+          MessageParam, RawContentBlockDeltaEvent, RawMessageStartEvent,
+        } from "@anthropic-ai/sdk/resources/messages.mjs"
+
+  - name: "ai-sdk-anthropic"
+    package: "@ai-sdk/anthropic"
+    version_constraint: "v2"
+    import_reference:
+      path: "packages/openai-adapters/src/apis/Anthropic.ts"
+      lines: [73, 75]
+      snippet: |
+        const { createAnthropic } = await import("@ai-sdk/anthropic");
+
+sdk_usage:
+
+  - id: streaming-sse
+    sdk: "anthropic-typescript"
+    pattern: "sse-streaming"
+    description: "SSE-based streaming with direct HTTP fetch to Anthropic API"
+
+    reference:
+      repository: "https://github.com/continuedev/continue"
+      commit: "d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550"
+      path: "core/llm/llms/Anthropic.ts"
+      lines: [403, 454]
+      function: "_streamChat"
+      class: "Anthropic"
+      language: "typescript"
+
+    api_methods:
+      - "fetch(messages endpoint)"
+      - "streamSse(response)"
+
+    snippet: |
+      const response = await this.fetch(new URL("messages", this.apiBase), {
+        method: "POST",
+        headers: getAnthropicHeaders(this.apiKey, shouldCachePrompt, this.apiBase),
+        body: JSON.stringify({
+          ...this.convertArgs(options),
+          messages: msgs,
+          system: shouldCacheSystemMessage ? [...] : systemMessage,
+        }),
+        signal,
+      });
+      yield* this.handleResponse(response, options.stream);
+
+    notes: "Uses direct HTTP fetch + SSE parsing rather than SDK client methods"
+
+  - id: caching-strategies
+    sdk: "anthropic-typescript"
+    pattern: "prompt-caching"
+    description: "4 caching strategies: no cache, system only, system+tools, optimized"
+
+    reference:
+      repository: "https://github.com/continuedev/continue"
+      commit: "d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550"
+      path: "packages/openai-adapters/src/apis/AnthropicCachingStrategies.ts"
+      lines: [1, 100]
+      language: "typescript"
+
+    snippet: |
+      // System + tools strategy
+      const systemAndToolsStrategy: CachingStrategy = (body) => {
+        if (result.system && Array.isArray(result.system)) {
+          result.system = result.system.map((item) => ({
+            ...item, cache_control: { type: "ephemeral" },
+          }));
+        }
+        if (result.tools?.length > 0) {
+          result.tools[result.tools.length - 1] = {
+            ...lastTool, cache_control: { type: "ephemeral" },
+          };
+        }
+        return result;
+      };
+
+    notes: "Optimized strategy caches system, tools, and large messages (>500 tokens)"
+
+  - id: extended-thinking
+    sdk: "anthropic-typescript"
+    pattern: "thinking"
+    description: "Extended thinking with budget tokens and signature handling"
+
+    reference:
+      repository: "https://github.com/continuedev/continue"
+      commit: "d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550"
+      path: "core/llm/llms/Anthropic.ts"
+      lines: [70, 76]
+      function: "convertArgs"
+      class: "Anthropic"
+      language: "typescript"
+
+    snippet: |
+      thinking: options.reasoning ? {
+        type: "enabled" as const,
+        budget_tokens: options.reasoningBudgetTokens ?? DEFAULT_REASONING_TOKENS,
+      } : undefined,
+
+    notes: "DEFAULT_REASONING_TOKENS = 2048. Handles thinking, redacted_thinking, and signature blocks"
+
+  - id: azure-endpoint-detection
+    sdk: "anthropic-typescript"
+    pattern: "azure-anthropic"
+    description: "Detects Azure-hosted Anthropic endpoints and adjusts auth headers"
+
+    reference:
+      repository: "https://github.com/continuedev/continue"
+      commit: "d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550"
+      path: "packages/openai-adapters/src/apis/AnthropicUtils.ts"
+      lines: [37, 94]
+      function: "isAzureAnthropicEndpoint"
+      language: "typescript"
+
+    snippet: |
+      export function isAzureAnthropicEndpoint(apiBase?: string): boolean {
+        const hostname = url.hostname.toLowerCase();
+        return hostname.endsWith(".services.ai.azure.com") ||
+               hostname.endsWith(".cognitiveservices.azure.com");
+      }
+      // Uses "api-key" header for Azure, "x-api-key" for Anthropic
+
+    notes: "Azure detection for .services.ai.azure.com and .cognitiveservices.azure.com"
+
+agents_sdk_features: {}
+
+patterns_summary:
+  messages-stream: true
+  tool-use: true
+  prompt-caching: true
+  extended-thinking: true
+  vision: true
+  azure-support: true
+  bedrock-support: true
+  vercel-ai-sdk: true
+  agent-create: false

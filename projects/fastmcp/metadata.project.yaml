@@ -1,0 +1,29 @@
+# Project Metadata: FastMCP
+# Spec: specs/project.spec.yaml
+
+name: "fastmcp"
+display_name: "FastMCP"
+repository: "https://github.com/jlowin/fastmcp"
+description: "Python MCP framework with Claude Code CLI integration for server installation, Claude Skills provider, and AnthropicSamplingHandler for MCP sampling"
+analyzed_commit: "806aa8c57985d5a0cdacfd9b22a2051e1a18a838"
+analyzed_at: "2026-02-07"
+
+website: "https://fastmcp.ai"
+documentation: "https://fastmcp.ai/docs"
+license: "Apache-2.0"
+primary_language: "Python"
+languages: [Python]
+tags: [mcp-framework, skills, cli-integration, sampling]
+
+integration_types: [cli, sdk, skills, mcp]
+
+analysis_status: "comprehensive"
+
+notes: |
+  Three integration paths:
+  1. CLI: `fastmcp install claude-code` uses `claude mcp add` to register MCP servers
+  2. SDK: AnthropicSamplingHandler wraps AsyncAnthropic for MCP sampling protocol
+  3. Skills: ClaudeSkillsProvider exposes ~/.claude/skills/ via skill:// URI scheme
+  Binary resolution: ~/.claude/local/claude → /usr/local/bin/claude → ~/.npm-global/bin/claude
+
+related_projects: ["claude-code-mcp", "claude-code-action"]

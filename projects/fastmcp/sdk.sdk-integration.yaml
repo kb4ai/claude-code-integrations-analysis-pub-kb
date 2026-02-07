@@ -1,0 +1,139 @@
+# SDK Integration Analysis: FastMCP
+# Spec: specs/sdk-integration.spec.yaml
+
+project: "fastmcp"
+sdk_integration_detected: true
+
+summary: |
+  AnthropicSamplingHandler implements MCP sampling protocol using AsyncAnthropic client.
+  Converts MCP messages/tools to Anthropic format. Also provides CLI integration via
+  `claude mcp add` command for registering MCP servers with Claude Code.
+
+sdks_used:
+  - name: "anthropic-python"
+    package: "anthropic"
+    version_constraint: ">=0.40.0"
+    import_reference:
+      path: "src/fastmcp/client/sampling/handlers/anthropic.py"
+      lines: [1, 10]
+      snippet: |
+        from anthropic import AsyncAnthropic
+
+sdk_usage:
+
+  - id: anthropic-sampling-handler
+    sdk: "anthropic-python"
+    pattern: "messages-create"
+    description: "MCP sampling protocol implementation via AsyncAnthropic"
+
+    reference:
+      repository: "https://github.com/jlowin/fastmcp"
+      commit: "806aa8c57985d5a0cdacfd9b22a2051e1a18a838"
+      path: "src/fastmcp/client/sampling/handlers/anthropic.py"
+      lines: [46, 121]
+      function: "__call__"
+      class: "AnthropicSamplingHandler"
+      language: "python"
+
+    api_methods:
+      - "client.messages.create"
+
+    parameters:
+      - name: "model"
+        value_type: "string"
+        purpose: "Model selection (prefers claude-* from preferences)"
+        example_value: "claude-sonnet-4-5"
+      - name: "messages"
+        value_type: "list"
+        purpose: "Converted MCP messages to Anthropic format"
+      - name: "max_tokens"
+        value_type: "integer"
+        purpose: "Response length limit"
+      - name: "system"
+        value_type: "string"
+        purpose: "System prompt (optional)"
+      - name: "tools"
+        value_type: "list"
+        purpose: "Converted MCP tools to Anthropic format"
+      - name: "tool_choice"
+        value_type: "object"
+        purpose: "Tool choice mapping (auto→auto, required→any, none→omit)"
+
+    snippet: |
+      kwargs = {
+          "model": model,
+          "messages": anthropic_messages,
+          "max_tokens": params.maxTokens,
+      }
+      if params.systemPrompt is not None:
+          kwargs["system"] = params.systemPrompt
+      if params.temperature is not None:
+          kwargs["temperature"] = params.temperature
+      if anthropic_tools is not None:
+          kwargs["tools"] = anthropic_tools
+      if anthropic_tool_choice is not None:
+          kwargs["tool_choice"] = anthropic_tool_choice
+      response = await self.client.messages.create(**kwargs)
+
+    notes: |
+      Stop reason mapping: tool_use→toolUse, end_turn→endTurn, max_tokens→maxTokens.
+      Model selection prioritizes models starting with "claude" from preferences.
+
+  - id: claude-code-mcp-add
+    sdk: "anthropic-python"
+    pattern: "cli-integration"
+    description: "Registers MCP servers with Claude Code via `claude mcp add` command"
+
+    reference:
+      repository: "https://github.com/jlowin/fastmcp"
+      commit: "806aa8c57985d5a0cdacfd9b22a2051e1a18a838"
+      path: "src/fastmcp/cli/install/claude_code.py"
+      lines: [73, 150]
+      function: "install_claude_code"
+      language: "python"
+
+    snippet: |
+      full_command = env_config.build_command(["fastmcp", "run", server_spec])
+      cmd_parts = [claude_cmd, "mcp", "add", name]
+      if env_vars:
+          for key, value in env_vars.items():
+              cmd_parts.extend(["-e", f"{key}={value}"])
+      cmd_parts.append("--")
+      cmd_parts.extend(full_command)
+
+    notes: |
+      Uses `claude mcp add` command (not CLI flags like -p or --output-format).
+      Binary resolution: ~/.claude/local/claude → /usr/local/bin/claude → ~/.npm-global/bin/claude
+
+  - id: claude-skills-provider
+    sdk: "anthropic-python"
+    pattern: "skills"
+    description: "Exposes ~/.claude/skills/ as MCP resources via skill:// URI scheme"
+
+    reference:
+      repository: "https://github.com/jlowin/fastmcp"
+      commit: "806aa8c57985d5a0cdacfd9b22a2051e1a18a838"
+      path: "src/fastmcp/server/providers/skills/claude_provider.py"
+      lines: [11, 44]
+      class: "ClaudeSkillsProvider"
+      language: "python"
+
+    snippet: |
+      class ClaudeSkillsProvider(SkillsDirectoryProvider):
+          # Hardcoded root: ~/.claude/skills/
+          # Exposes skills as MCP resources via skill:// URI scheme
+          # Supports progressive disclosure via frontmatter metadata
+          pass
+
+    notes: "skill://{skill_name}/SKILL.md and skill://{skill_name}/_manifest URIs"
+
+agents_sdk_features: {}
+
+patterns_summary:
+  messages-create: true
+  tool-use: true
+  prompt-caching: false
+  extended-thinking: false
+  cli-mcp-add: true
+  skills-provider: true
+  agent-create: false

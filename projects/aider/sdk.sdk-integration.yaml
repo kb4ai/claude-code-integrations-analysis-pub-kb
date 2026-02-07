@@ -1,0 +1,157 @@
+# SDK Integration Analysis: Aider
+# Spec: specs/sdk-integration.spec.yaml
+
+project: "aider"
+sdk_integration_detected: true
+
+summary: |
+  Uses LiteLLM as abstraction layer for Anthropic API access. Deep customization for Claude models
+  including prompt caching with cache warming (background thread), extended thinking tokens,
+  model-specific configuration via YAML settings, and multi-provider support (direct, Bedrock, Vertex, OpenRouter).
+
+sdks_used:
+  - name: "litellm"
+    package: "litellm"
+    version_constraint: ">=1.0.0"
+    import_reference:
+      path: "aider/llm.py"
+      lines: [1, 48]
+      snippet: |
+        class LazyLiteLLM:
+            _lazy_module = None
+            def __getattr__(self, name):
+                self._load_litellm()
+                return getattr(self._lazy_module, name)
+        litellm = LazyLiteLLM()
+
+sdk_usage:
+
+  - id: litellm-completion
+    sdk: "litellm"
+    pattern: "completion"
+    description: "Main completion call via litellm.completion() with Anthropic-specific parameters"
+
+    reference:
+      repository: "https://github.com/paul-gauthier/aider"
+      commit: "4bf56b77145b0be593ed48c3c90cdecead217496"
+      path: "aider/models.py"
+      lines: [950, 1002]
+      function: "send_completion"
+      class: "Model"
+      language: "python"
+
+    api_methods:
+      - "litellm.completion"
+
+    parameters:
+      - name: "model"
+        value_type: "string"
+        purpose: "Model selection (e.g. anthropic/claude-sonnet-4-20250514)"
+        example_value: "anthropic/claude-sonnet-4-20250514"
+      - name: "stream"
+        value_type: "boolean"
+        purpose: "Enable streaming"
+        example_value: "true"
+      - name: "extra_headers"
+        value_type: "dict"
+        purpose: "Anthropic beta headers for prompt caching and extended output"
+        example_value: "{'anthropic-beta': 'prompt-caching-2024-07-31,pdfs-2024-09-25'}"
+      - name: "thinking"
+        value_type: "dict"
+        purpose: "Extended thinking configuration"
+        example_value: "{'type': 'enabled', 'budget_tokens': 32000}"
+
+    snippet: |
+      kwargs = dict(model=self.name, stream=stream)
+      if functions is not None:
+          function = functions[0]
+          kwargs["tools"] = [dict(type="function", function=function)]
+          kwargs["tool_choice"] = {"type": "function", "function": {"name": function["name"]}}
+      res = litellm.completion(**kwargs)
+      return hash_object, res
+
+    notes: "Uses litellm.completion() which routes to Anthropic SDK internally"
+
+  - id: prompt-caching
+    sdk: "litellm"
+    pattern: "prompt-caching"
+    description: "Anthropic prompt caching with ephemeral cache control and background cache warming"
+
+    reference:
+      repository: "https://github.com/paul-gauthier/aider"
+      commit: "4bf56b77145b0be593ed48c3c90cdecead217496"
+      path: "aider/coders/chat_chunks.py"
+      lines: [28, 55]
+      function: "add_cache_control_headers"
+      language: "python"
+
+    snippet: |
+      def add_cache_control_headers(self):
+          if self.examples:
+              self.add_cache_control(self.examples)
+          else:
+              self.add_cache_control(self.system)
+          if self.repo:
+              self.add_cache_control(self.repo)
+          else:
+              self.add_cache_control(self.readonly_files)
+          self.add_cache_control(self.chat_files)
+
+      def add_cache_control(self, messages):
+          if not messages:
+              return
+          content = messages[-1]["content"]
+          if type(content) is str:
+              content = dict(type="text", text=content)
+          content["cache_control"] = {"type": "ephemeral"}
+          messages[-1]["content"] = [content]
+
+    notes: |
+      Three cache breakpoints: examples/system, repo/readonly_files, chat_files.
+      Background cache warming thread sends periodic API calls (max_tokens=1) every ~5 minutes
+      to keep cache alive. AIDER_CACHE_KEEPALIVE_DELAY env configurable.
+
+  - id: extended-thinking
+    sdk: "litellm"
+    pattern: "thinking-tokens"
+    description: "Extended thinking configuration with budget tokens"
+
+    reference:
+      repository: "https://github.com/paul-gauthier/aider"
+      commit: "4bf56b77145b0be593ed48c3c90cdecead217496"
+      path: "aider/models.py"
+      lines: [803, 829]
+      function: "set_thinking_tokens"
+      class: "Model"
+      language: "python"
+
+    snippet: |
+      def set_thinking_tokens(self, value):
+          if value is not None:
+              num_tokens = self.parse_token_value(value)
+              self.use_temperature = False  # Thinking incompatible with temperature
+              if not self.extra_params:
+                  self.extra_params = {}
+              if self.name.startswith("openrouter/"):
+                  # OpenRouter uses 'reasoning' instead of 'thinking'
+                  self.extra_params["extra_body"] = {"reasoning": {"max_tokens": num_tokens}}
+              else:
+                  self.extra_params["thinking"] = {"type": "enabled", "budget_tokens": num_tokens}
+
+    notes: |
+      Supports format: 8096, "8k", "10.5k", "0.5M", "10K".
+      Temperature automatically disabled when thinking enabled.
+      OpenRouter uses different parameter name ('reasoning' vs 'thinking').
+
+agents_sdk_features: {}
+
+patterns_summary:
+  messages-stream: true
+  tool-use: true
+  prompt-caching: true
+  extended-thinking: true
+  cache-warming: true
+  agent-create: false
+  bedrock-support: true
+  vertex-support: true
+  openrouter-support: true
