@@ -1,0 +1,34 @@
+# Project Metadata: Goose
+# Spec: specs/project.spec.yaml
+
+name: "goose"
+display_name: "Goose (Block)"
+repository: "https://github.com/block/goose"
+description: "An open-source AI coding assistant by Block that integrates Claude Code as a persistent subprocess provider using stream-json NDJSON protocol"
+analyzed_commit: "b18120bec310365d96cafcc34ea63d8534e3ee57"
+analyzed_at: "2026-02-07"
+
+# Optional fields
+website: "https://block.github.io/goose/"
+documentation: "https://block.github.io/goose/docs"
+license: "Apache-2.0"
+primary_language: "Rust"
+languages: [Rust, TypeScript]
+tags: [cli, coding-assistant, multi-provider, mcp-client]
+
+# Integration types detected
+integration_types: [cli, sdk]
+
+# Analysis status
+analysis_status: "comprehensive"
+
+# Notes
+notes: |
+  Goose has TWO distinct Claude integration paths:
+  1. ClaudeCodeProvider - spawns `claude` CLI as persistent subprocess with stream-json NDJSON protocol
+  2. AnthropicProvider - direct Anthropic API access via anthropic crate
+  The CLI integration is unique in the ecosystem for using persistent process + NDJSON bidirectional communication
+  rather than per-request spawning.
+
+# Related projects
+related_projects: ["cline", "claude-code-mcp"]

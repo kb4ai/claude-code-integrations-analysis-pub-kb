@@ -1,0 +1,29 @@
+# Project Metadata: claude-flow
+# Spec: specs/project.spec.yaml
+
+name: "claude-flow"
+display_name: "Claude Flow"
+repository: "https://github.com/ruvnet/claude-flow"
+description: "Multi-agent orchestration framework that spawns and coordinates multiple Claude Code CLI instances in parallel with stream chaining and MCP coordination"
+analyzed_commit: "e82a79419c6a648a36de3529ab5d44a8a4d818a4"
+analyzed_at: "2026-02-07"
+
+website: ""
+documentation: ""
+license: "MIT"
+primary_language: "TypeScript"
+languages: [TypeScript, JavaScript]
+tags: [multi-agent, orchestration, cli, stream-chaining, mcp]
+
+integration_types: [cli, mcp]
+
+analysis_status: "comprehensive"
+
+notes: |
+  Most sophisticated CLI orchestration in the ecosystem. Spawns multiple Claude Code
+  instances with phase-based parallel execution (Promise.allSettled), stream chaining
+  via stdout→stdin piping, DAG-based dependency resolution with cycle detection,
+  NDJSON output parsing, hooks integration, and memory coordination.
+  Supports interactive, non-interactive, and headless (CI/Docker) modes.
+
+related_projects: ["claude-code-mcp", "goose"]

@@ -1,0 +1,211 @@
+# CLI Integration Analysis: Goose
+# Spec: specs/cli-integration.spec.yaml
+
+project: "goose"
+cli_integration_detected: true
+
+summary: |
+  Goose spawns `claude` CLI as a persistent subprocess using bidirectional NDJSON (stream-json)
+  protocol. Unlike most integrations that spawn per-request, Goose keeps a long-running Claude process
+  and communicates via stdin/stdout JSON messages. Supports model selection, permission mode mapping,
+  and custom system prompts.
+
+invocations:
+
+  - id: claude-code-provider-spawn
+    description: "Spawns Claude Code CLI as persistent subprocess with stream-json I/O"
+
+    reference:
+      repository: "https://github.com/block/goose"
+      commit: "b18120bec310365d96cafcc34ea63d8534e3ee57"
+      path: "crates/goose-llm/src/claude_code_provider.rs"
+      lines: [1, 80]
+      function: "start_process"
+      class: "ClaudeCodeProvider"
+      language: "rust"
+
+    command_pattern: "claude --input-format stream-json --output-format stream-json --verbose --system-prompt {prompt} [--model {model}] [--dangerously-skip-permissions]"
+
+    flags_used:
+      - flag: "--input-format"
+        value_type: "enum"
+        value_options: ["stream-json"]
+        purpose: "Accept NDJSON messages on stdin for bidirectional communication"
+        checklist_ref: "cli-flags.checklist.yaml#input-format"
+
+      - flag: "--output-format"
+        value_type: "enum"
+        value_options: ["stream-json"]
+        purpose: "Emit NDJSON messages on stdout for real-time streaming"
+        checklist_ref: "cli-flags.checklist.yaml#output-format"
+
+      - flag: "--verbose"
+        value_type: "flag"
+        purpose: "Required for stream-json output format"
+        checklist_ref: "cli-flags.checklist.yaml#verbose"
+
+      - flag: "--system-prompt"
+        value_type: "string"
+        purpose: "Pass custom system prompt for agent behavior"
+        checklist_ref: "cli-flags.checklist.yaml#system-prompt"
+
+      - flag: "--model"
+        value_type: "string"
+        purpose: "Model selection - only passed for 'sonnet' or 'opus' values"
+        checklist_ref: "cli-flags.checklist.yaml#model"
+
+      - flag: "--dangerously-skip-permissions"
+        value_type: "flag"
+        purpose: "Auto-approve all operations when GOOSE_MODE=auto"
+        checklist_ref: "cli-flags.checklist.yaml#dangerously-skip-permissions"
+
+      - flag: "--permission-mode"
+        value_type: "string"
+        value_options: ["acceptEdits"]
+        purpose: "Accept edits mode when GOOSE_MODE=smart-approve"
+        checklist_ref: "cli-flags.checklist.yaml#permission-mode"
+
+    snippet: |
+      // Spawns Claude Code as persistent subprocess
+      let mut cmd = Command::new(claude_code_command);
+      cmd.arg("--input-format").arg("stream-json")
+         .arg("--output-format").arg("stream-json")
+         .arg("--verbose")
+         .arg("--system-prompt").arg(&system_prompt);
+
+      // Model selection - only for specific values
+      if model == "sonnet" || model == "opus" {
+          cmd.arg("--model").arg(&model);
+      }
+
+      // Permission mode mapping from GOOSE_MODE
+      match goose_mode.as_str() {
+          "auto" => { cmd.arg("--dangerously-skip-permissions"); }
+          "smart-approve" => { cmd.arg("--permission-mode").arg("acceptEdits"); }
+          _ => {}
+      }
+
+    environment_variables:
+      - name: "CLAUDE_CODE_COMMAND"
+        purpose: "Override Claude Code binary path (default: 'claude')"
+      - name: "GOOSE_MODE"
+        purpose: "Maps to CLI permission flags: auto→--dangerously-skip-permissions, smart-approve→--permission-mode acceptEdits"
+
+    notes: |
+      Unique persistent process pattern: Unlike claude-code-mcp which spawns per-request,
+      Goose keeps a long-running Claude process and sends NDJSON messages via stdin.
+      Default model is claude-sonnet-4-20250514.
+
+  - id: ndjson-input-protocol
+    description: "Sends user messages as NDJSON objects to Claude stdin"
+
+    reference:
+      repository: "https://github.com/block/goose"
+      commit: "b18120bec310365d96cafcc34ea63d8534e3ee57"
+      path: "crates/goose-llm/src/claude_code_provider.rs"
+      lines: [85, 120]
+      function: "send_message"
+      class: "ClaudeCodeProvider"
+      language: "rust"
+
+    command_pattern: "stdin NDJSON: {\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[...]}}"
+
+    snippet: |
+      // Each message is a single JSON line written to stdin
+      let msg = json!({
+          "type": "user",
+          "message": {
+              "role": "user",
+              "content": content_blocks
+          }
+      });
+      stdin.write_all(serde_json::to_string(&msg)?.as_bytes())?;
+      stdin.write_all(b"\n")?;
+
+    notes: "Bidirectional NDJSON protocol - each line is a complete JSON object"
+
+  - id: ndjson-response-parsing
+    description: "Parses Claude stdout NDJSON for assistant/result/error events"
+
+    reference:
+      repository: "https://github.com/block/goose"
+      commit: "b18120bec310365d96cafcc34ea63d8534e3ee57"
+      path: "crates/goose-llm/src/claude_code_provider.rs"
+      lines: [125, 180]
+      function: "read_response"
+      class: "ClaudeCodeProvider"
+      language: "rust"
+
+    snippet: |
+      // Parse each line from stdout as JSON event
+      for line in reader.lines() {
+          let event: Value = serde_json::from_str(&line?)?;
+          match event["type"].as_str() {
+              Some("assistant") => {
+                  // Extract message content from assistant response
+                  let message = &event["message"];
+                  // Process content blocks (text, tool_use, etc.)
+              }
+              Some("result") => {
+                  // Final result with cost, duration, session_id
+                  break;
+              }
+              Some("error") => {
+                  // Handle error events
+              }
+              _ => {} // Skip unknown event types
+          }
+      }
+
+    notes: "Three event types: assistant (content), result (final), error"
+
+# Summary of all flags used
+flags_summary:
+  "--input-format":
+    used: true
+    invocation_ids: ["claude-code-provider-spawn"]
+    notes: "Always set to stream-json for NDJSON bidirectional communication"
+  "--output-format":
+    used: true
+    invocation_ids: ["claude-code-provider-spawn"]
+    notes: "Always set to stream-json"
+  "--verbose":
+    used: true
+    invocation_ids: ["claude-code-provider-spawn"]
+    notes: "Required for stream-json output"
+  "--system-prompt":
+    used: true
+    invocation_ids: ["claude-code-provider-spawn"]
+    notes: "Custom system prompt passed as string argument"
+  "--model":
+    used: true
+    invocation_ids: ["claude-code-provider-spawn"]
+    notes: "Only passed for 'sonnet' or 'opus' values"
+  "--dangerously-skip-permissions":
+    used: true
+    invocation_ids: ["claude-code-provider-spawn"]
+    notes: "Enabled when GOOSE_MODE=auto"
+  "--permission-mode":
+    used: true
+    invocation_ids: ["claude-code-provider-spawn"]
+    notes: "Set to acceptEdits when GOOSE_MODE=smart-approve"
+  "--session":
+    used: false
+    invocation_ids: []
+    notes: "NOT used - Goose uses persistent process instead of session IDs"
+  "-p":
+    used: false
+    invocation_ids: []
+    notes: "NOT used - uses stdin NDJSON instead of -p flag"
+  "--max-turns":
+    used: false
+    invocation_ids: []
+    notes: "NOT used"
+  "--mcp-config":
+    used: false
+    invocation_ids: []
+    notes: "NOT used"
+  "--allowedTools":
+    used: false
+    invocation_ids: []
+    notes: "NOT used"

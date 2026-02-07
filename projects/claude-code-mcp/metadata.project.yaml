@@ -1,0 +1,32 @@
+# Project Metadata: claude-code-mcp
+# Spec: specs/project.spec.yaml
+
+name: "claude-code-mcp"
+display_name: "Claude Code MCP (steipete)"
+repository: "https://github.com/steipete/claude-code-mcp"
+description: "Wraps Claude Code CLI as an MCP server, enabling agent-in-agent patterns where any MCP client can invoke Claude Code"
+analyzed_commit: "24dfd389393cf35cc1390567bedda2d165756ef3"
+analyzed_at: "2026-02-07"
+
+# Optional fields
+website: ""
+documentation: ""
+license: "MIT"
+primary_language: "TypeScript"
+languages: [TypeScript]
+tags: [mcp-server, agent-in-agent, cli-wrapper]
+
+# Integration types detected
+integration_types: [cli, mcp]
+
+# Analysis status
+analysis_status: "comprehensive"
+
+# Notes
+notes: |
+  Agent-in-agent pattern: Exposes a single MCP tool `claude_code` that spawns
+  Claude Code CLI per-request. Stateless - no session management.
+  Binary resolution chain: CLAUDE_CLI_NAME env → ~/.claude/local/claude → PATH.
+
+# Related projects
+related_projects: ["claude-code-action", "goose"]

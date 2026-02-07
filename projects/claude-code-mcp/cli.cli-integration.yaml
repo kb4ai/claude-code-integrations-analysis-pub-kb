@@ -1,0 +1,121 @@
+# CLI Integration Analysis: claude-code-mcp
+# Spec: specs/cli-integration.spec.yaml
+
+project: "claude-code-mcp"
+cli_integration_detected: true
+
+summary: |
+  Spawns `claude` CLI per-request via Node.js child_process.spawn() with --dangerously-skip-permissions -p flags.
+  Stateless execution with 30-minute timeout. Single MCP tool interface.
+
+invocations:
+
+  - id: mcp-tool-spawn
+    description: "Spawns Claude Code CLI for each MCP tool invocation"
+
+    reference:
+      repository: "https://github.com/steipete/claude-code-mcp"
+      commit: "24dfd389393cf35cc1390567bedda2d165756ef3"
+      path: "src/claude-api.ts"
+      lines: [40, 95]
+      function: "executeClaudeCode"
+      language: "typescript"
+
+    command_pattern: "claude --dangerously-skip-permissions -p {prompt}"
+
+    flags_used:
+      - flag: "--dangerously-skip-permissions"
+        value_type: "flag"
+        purpose: "Auto-approve all operations (required for non-interactive MCP context)"
+        checklist_ref: "cli-flags.checklist.yaml#dangerously-skip-permissions"
+
+      - flag: "-p"
+        value_type: "string"
+        purpose: "Pass prompt for non-interactive execution"
+        checklist_ref: "cli-flags.checklist.yaml#print-prompt"
+
+    snippet: |
+      const claudeProcess = spawn(claudeCommand, [
+        '--dangerously-skip-permissions',
+        '-p',
+        prompt,
+      ], {
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: workFolder || process.cwd(),
+        timeout: 30 * 60 * 1000, // 30 minutes
+      });
+
+    environment_variables:
+      - name: "CLAUDE_CLI_NAME"
+        purpose: "Override Claude Code binary name/path"
+      - name: "MCP_CLAUDE_DEBUG"
+        purpose: "Enable debug logging"
+
+    notes: |
+      Stateless per-request spawning (contrast with Goose's persistent process).
+      Binary resolution: CLAUDE_CLI_NAME env → ~/.claude/local/claude → PATH lookup.
+      shell:false for security. 30-minute timeout.
+
+  - id: binary-resolution
+    description: "Resolves Claude Code binary location"
+
+    reference:
+      repository: "https://github.com/steipete/claude-code-mcp"
+      commit: "24dfd389393cf35cc1390567bedda2d165756ef3"
+      path: "src/claude-api.ts"
+      lines: [10, 35]
+      function: "findClaudeCommand"
+      language: "typescript"
+
+    snippet: |
+      function findClaudeCommand(): string {
+        // 1. Check environment variable
+        if (process.env.CLAUDE_CLI_NAME) {
+          return process.env.CLAUDE_CLI_NAME;
+        }
+        // 2. Check default install location
+        const defaultPath = path.join(os.homedir(), '.claude', 'local', 'claude');
+        if (fs.existsSync(defaultPath)) {
+          return defaultPath;
+        }
+        // 3. Fall back to PATH
+        return 'claude';
+      }
+
+    notes: "Three-stage binary resolution with environment override"
+
+# Summary of all flags used
+flags_summary:
+  "--dangerously-skip-permissions":
+    used: true
+    invocation_ids: ["mcp-tool-spawn"]
+    notes: "Always enabled - required for non-interactive MCP context"
+  "-p":
+    used: true
+    invocation_ids: ["mcp-tool-spawn"]
+    notes: "Used for every invocation to pass prompt"
+  "--session":
+    used: false
+    invocation_ids: []
+    notes: "NOT used - stateless per-request execution"
+  "--output-format":
+    used: false
+    invocation_ids: []
+    notes: "NOT used - collects raw stdout/stderr text"
+  "--model":
+    used: false
+    invocation_ids: []
+    notes: "NOT used - uses whatever model Claude Code defaults to"
+  "--system-prompt":
+    used: false
+    invocation_ids: []
+    notes: "NOT used"
+  "--max-turns":
+    used: false
+    invocation_ids: []
+    notes: "NOT used"
+  "--verbose":
+    used: false
+    invocation_ids: []
+    notes: "NOT used"
