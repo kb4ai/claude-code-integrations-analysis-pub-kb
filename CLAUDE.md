@@ -166,3 +166,7 @@ When documenting, always link:
 * To relevant checklist items
 * To spec field definitions
 * Between related projects (e.g., "similar pattern to goose, see projects/goose/cli.cli-integration.yaml:45")
+
+## Detailed Methodology
+
+@AGENTS.md
