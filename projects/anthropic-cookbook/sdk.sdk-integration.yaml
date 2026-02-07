@@ -1,0 +1,98 @@
+# SDK Integration Analysis Template
+# Spec: specs/sdk-integration.spec.yaml
+#
+# Delete this file if the project does NOT use Anthropic/Claude SDKs.
+# Otherwise, document all SDK usage patterns found.
+
+project: "_template"  # TODO: Must match metadata.project.yaml name
+sdk_integration_detected: false  # TODO: Set to true if SDK usage found
+
+summary: ""  # TODO: Brief summary of SDK integration approach
+
+# List all SDKs used
+sdks_used: []
+  # Example:
+  # - name: "anthropic-python"
+  #   package: "anthropic"
+  #   version_constraint: ">=0.25.0"
+  #   import_reference:
+  #     path: "src/client.py"
+  #     lines: [1, 3]
+  #     snippet: |
+  #       from anthropic import Anthropic
+  #       from anthropic.types import Message
+
+# Document each SDK usage pattern
+sdk_usage: []
+  # Example:
+  # - id: streaming-messages
+  #   sdk: "anthropic-python"
+  #   pattern: "messages-stream"
+  #   description: "Uses streaming API for real-time response display"
+  #
+  #   reference:
+  #     repository: "https://github.com/org/repo"
+  #     commit: "abc123..."
+  #     path: "src/claude/streaming.py"
+  #     lines: [45, 68]
+  #     function: "stream_response"
+  #     language: "python"
+  #
+  #   api_methods:
+  #     - "client.messages.stream"
+  #     - "stream.text_stream"
+  #
+  #   parameters:
+  #     - name: "model"
+  #       value_type: "string"
+  #       purpose: "Model selection"
+  #       example_value: "claude-sonnet-4-20250514"
+  #
+  #     - name: "max_tokens"
+  #       value_type: "integer"
+  #       purpose: "Response length limit"
+  #       example_value: "4096"
+  #
+  #   snippet: |
+  #     with client.messages.stream(
+  #         model="claude-sonnet-4-20250514",
+  #         max_tokens=4096,
+  #         messages=messages
+  #     ) as stream:
+  #         for text in stream.text_stream:
+  #             yield text
+  #
+  #   notes: "Context manager ensures proper cleanup"
+  #
+  #   checklist_refs:
+  #     - "sdk-features.checklist.yaml#messages-stream"
+
+# Claude Agents SDK specific features (if used)
+agents_sdk_features: {}
+  # agent_configuration:
+  #   model_selection: true
+  #   system_prompt_customization: true
+  #   tool_registration: true
+  #   max_turns_config: true
+  #   reference:
+  #     path: "src/agent.py"
+  #     lines: [10, 35]
+  #
+  # tool_patterns:
+  #   - tool_type: "bash"
+  #     description: "Shell command execution"
+  #     reference: ...
+  #     snippet: |
+  #       ...
+  #
+  # conversation_handling:
+  #   session_persistence: true
+  #   history_management: true
+  #   context_windowing: false
+  #   reference: ...
+
+# Quick reference of patterns used
+patterns_summary: {}
+  # messages-stream: true
+  # tool-use: true
+  # agent-create: false
