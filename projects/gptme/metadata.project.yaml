@@ -1,36 +1,31 @@
-# Project Metadata Template
+# Project Metadata: gptme
 # Spec: specs/project.spec.yaml
-#
-# Instructions:
-# 1. Copy this directory: cp -r projects/_template projects/{project-name}
-# 2. Fill in all fields marked with TODO
-# 3. Run: ./scripts/verify_yamls.py projects/{project-name}/
 
-name: "_template"  # TODO: Change to project name (must match directory name)
-display_name: "Project Display Name"  # TODO: Human-readable name
-repository: "https://github.com/org/repo"  # TODO: HTTPS URL (not SSH)
-description: "Brief description of the project"  # TODO: 1-2 sentences
-analyzed_commit: "0000000000000000000000000000000000000000"  # TODO: Full 40-char SHA
-analyzed_at: "YYYY-MM-DD"  # TODO: Date of analysis
+name: "gptme"
+display_name: "gptme"
+repository: "https://github.com/ErikBjare/gptme"
+description: "Open-source AI coding agent with deep native Anthropic SDK integration including extended thinking, prompt caching, vision, web search, tool use, and MCP support"
+analyzed_commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
+analyzed_at: "2026-02-07"
 
-# Optional fields
-website: ""  # Project website if different from repo
-documentation: ""  # Documentation URL
-license: ""  # e.g., MIT, Apache-2.0
-primary_language: ""  # e.g., Python, TypeScript
-languages: []  # e.g., [Python, TypeScript, Rust]
-tags: []  # e.g., [cli, vscode-extension, coding-assistant]
+website: "https://gptme.org"
+documentation: "https://gptme.org/docs"
+license: "MIT"
+primary_language: "Python"
+languages: [Python]
+tags: [coding-agent, multi-provider, mcp, extended-thinking, vision, web-search]
 
-# Integration types detected (update as you analyze)
-# Valid values: cli, sdk, skills, plugins, marketplace, mcp
-integration_types: []
+integration_types: [sdk, mcp]
 
-# Analysis status
-# Valid values: pending, minimal, in-progress, comprehensive
-analysis_status: "pending"
+analysis_status: "comprehensive"
 
-# Notes about the project or analysis
-notes: ""
+notes: |
+  Deep native Anthropic SDK integration (anthropic ^0.47). Does NOT invoke Claude CLI.
+  Features: streaming (messages.stream), extended thinking with configurable budget,
+  prompt caching (ephemeral cache_control on system + last 2 user messages),
+  vision (base64 images), native web search (web_search_20250305), tool use,
+  constrained output via Pydantic schemas, MCP server integration, ACP protocol support.
+  Model-aware: temperature=1 for reasoning models, top_p omitted.
+  Environment-driven config: GPTME_REASONING, GPTME_REASONING_BUDGET, GPTME_ANTHROPIC_WEB_SEARCH.
 
-# Related projects in this repository
-related_projects: []
+related_projects: ["aider", "openhands"]

@@ -1,98 +1,218 @@
-# SDK Integration Analysis Template
+# SDK Integration Analysis: gptme
 # Spec: specs/sdk-integration.spec.yaml
-#
-# Delete this file if the project does NOT use Anthropic/Claude SDKs.
-# Otherwise, document all SDK usage patterns found.
 
-project: "_template"  # TODO: Must match metadata.project.yaml name
-sdk_integration_detected: false  # TODO: Set to true if SDK usage found
+project: "gptme"
+sdk_integration_detected: true
 
-summary: ""  # TODO: Brief summary of SDK integration approach
+summary: |
+  Deep native Anthropic SDK integration using anthropic ^0.47 Python package.
+  Direct client.messages.stream() for streaming responses. Advanced features:
+  extended thinking with configurable budget, prompt caching (ephemeral cache_control),
+  vision, native web search, tool use, constrained output via Pydantic schemas,
+  MCP server integration, and ACP protocol support. Does NOT invoke Claude CLI binary.
 
-# List all SDKs used
-sdks_used: []
-  # Example:
-  # - name: "anthropic-python"
-  #   package: "anthropic"
-  #   version_constraint: ">=0.25.0"
-  #   import_reference:
-  #     path: "src/client.py"
-  #     lines: [1, 3]
-  #     snippet: |
-  #       from anthropic import Anthropic
-  #       from anthropic.types import Message
+sdks_used:
+  - name: "anthropic-python"
+    package: "anthropic"
+    version_constraint: "^0.47"
+    import_reference:
+      path: "gptme/llm/llm_anthropic.py"
+      lines: [1, 10]
+      snippet: |
+        from anthropic import NOT_GIVEN, Anthropic  # fmt: skip
 
-# Document each SDK usage pattern
-sdk_usage: []
-  # Example:
-  # - id: streaming-messages
-  #   sdk: "anthropic-python"
-  #   pattern: "messages-stream"
-  #   description: "Uses streaming API for real-time response display"
-  #
-  #   reference:
-  #     repository: "https://github.com/org/repo"
-  #     commit: "abc123..."
-  #     path: "src/claude/streaming.py"
-  #     lines: [45, 68]
-  #     function: "stream_response"
-  #     language: "python"
-  #
-  #   api_methods:
-  #     - "client.messages.stream"
-  #     - "stream.text_stream"
-  #
-  #   parameters:
-  #     - name: "model"
-  #       value_type: "string"
-  #       purpose: "Model selection"
-  #       example_value: "claude-sonnet-4-20250514"
-  #
-  #     - name: "max_tokens"
-  #       value_type: "integer"
-  #       purpose: "Response length limit"
-  #       example_value: "4096"
-  #
-  #   snippet: |
-  #     with client.messages.stream(
-  #         model="claude-sonnet-4-20250514",
-  #         max_tokens=4096,
-  #         messages=messages
-  #     ) as stream:
-  #         for text in stream.text_stream:
-  #             yield text
-  #
-  #   notes: "Context manager ensures proper cleanup"
-  #
-  #   checklist_refs:
-  #     - "sdk-features.checklist.yaml#messages-stream"
+sdk_usage:
 
-# Claude Agents SDK specific features (if used)
+  - id: streaming-messages
+    sdk: "anthropic-python"
+    pattern: "messages-stream"
+    description: "Streaming message API with full event handling for text, thinking, tools, citations"
+
+    reference:
+      repository: "https://github.com/ErikBjare/gptme"
+      commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
+      path: "gptme/llm/llm_anthropic.py"
+      lines: [444, 595]
+      function: "stream"
+      language: "python"
+
+    api_methods:
+      - "client.messages.stream"
+
+    parameters:
+      - name: "model"
+        value_type: "string"
+        purpose: "Model selection"
+        example_value: "claude-opus-4-5"
+      - name: "messages"
+        value_type: "list"
+        purpose: "Conversation messages in Anthropic format"
+      - name: "system"
+        value_type: "list"
+        purpose: "System messages"
+      - name: "temperature"
+        value_type: "float"
+        purpose: "Sampling temperature (forced to 1 for reasoning models)"
+      - name: "top_p"
+        value_type: "float"
+        purpose: "Top-p sampling (NOT_GIVEN for reasoning models)"
+      - name: "max_tokens"
+        value_type: "integer"
+        purpose: "Response length limit"
+      - name: "tools"
+        value_type: "list"
+        purpose: "Tool definitions in Anthropic format"
+      - name: "thinking"
+        value_type: "object"
+        purpose: "Extended thinking config: {type: enabled, budget_tokens: N}"
+
+    snippet: |
+      with _anthropic.messages.stream(
+          model=api_model,
+          messages=messages_dicts,
+          system=system_messages,
+          temperature=TEMPERATURE if not model_meta.supports_reasoning else 1,
+          top_p=TOP_P if not model_meta.supports_reasoning else NOT_GIVEN,
+          max_tokens=max_tokens,
+          tools=tools_dict if tools_dict else NOT_GIVEN,
+          thinking=(
+              {"type": "enabled", "budget_tokens": thinking_budget}
+              if use_thinking
+              else NOT_GIVEN
+          ),
+      ) as stream:
+
+    notes: |
+      Handles TextDelta, ThinkingDelta, InputJSONDelta, CitationsDelta events.
+      Temperature forced to 1 for reasoning models per Anthropic requirements.
+
+  - id: extended-thinking
+    sdk: "anthropic-python"
+    pattern: "extended-thinking"
+    description: "Extended thinking with configurable budget via environment variables"
+
+    reference:
+      repository: "https://github.com/ErikBjare/gptme"
+      commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
+      path: "gptme/llm/llm_anthropic.py"
+      lines: [156, 173]
+      function: "_should_use_thinking"
+      language: "python"
+
+    snippet: |
+      def _should_use_thinking(model_meta: ModelMeta, tools: list[ToolSpec] | None) -> bool:
+          env_reasoning = os.environ.get(ENV_REASONING)
+          if env_reasoning and env_reasoning.lower() in ("1", "true", "yes"):
+              return True
+          elif env_reasoning and env_reasoning.lower() in ("0", "false", "no"):
+              return False
+          if not model_meta.supports_reasoning:
+              return False
+          return True
+
+    notes: |
+      GPTME_REASONING env var to enable/disable. GPTME_REASONING_BUDGET for budget (default 16000).
+      Thinking content extracted and formatted as <think>...</think> tags.
+
+  - id: prompt-caching
+    sdk: "anthropic-python"
+    pattern: "prompt-caching"
+    description: "Ephemeral cache control on system message and last 2 user messages"
+
+    reference:
+      repository: "https://github.com/ErikBjare/gptme"
+      commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
+      path: "gptme/llm/utils.py"
+      lines: [197, 280]
+      function: "apply_cache_control"
+      language: "python"
+
+    snippet: |
+      def _set_cache_control_on_last_part(content: list[dict]) -> list[dict]:
+          """Add cache_control to the last non-empty content part."""
+          content[i] = {**part, "cache_control": {"type": "ephemeral"}}
+
+    notes: |
+      3 cache breakpoints: system message + last 2 user messages.
+      Tracks cache_read_tokens and cache_creation_tokens for cost monitoring.
+
+  - id: vision-support
+    sdk: "anthropic-python"
+    pattern: "vision"
+    description: "Base64-encoded image support in message content blocks"
+
+    reference:
+      repository: "https://github.com/ErikBjare/gptme"
+      commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
+      path: "gptme/llm/llm_anthropic.py"
+      lines: [705, 737]
+      function: "_process_file"
+      language: "python"
+
+    notes: "Supported formats: JPG, JPEG, PNG, GIF. Max 5MB. All Claude 3+ models have vision."
+
+  - id: web-search
+    sdk: "anthropic-python"
+    pattern: "web-search"
+    description: "Native Anthropic web search tool integration"
+
+    reference:
+      repository: "https://github.com/ErikBjare/gptme"
+      commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
+      path: "gptme/llm/llm_anthropic.py"
+      lines: [832, 896]
+      function: "_create_web_search_tool"
+      language: "python"
+
+    snippet: |
+      def _create_web_search_tool(max_uses: int = 5) -> dict[str, Any]:
+          return {
+              "type": "web_search_20250305",
+              "name": "web_search",
+              "max_uses": max_uses,
+          }
+
+    notes: "GPTME_ANTHROPIC_WEB_SEARCH env to enable. GPTME_ANTHROPIC_WEB_SEARCH_MAX_USES for limit."
+
+  - id: tool-use
+    sdk: "anthropic-python"
+    pattern: "tool-use"
+    description: "Tool definitions converted from gptme ToolSpec to Anthropic format"
+
+    reference:
+      repository: "https://github.com/ErikBjare/gptme"
+      commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
+      path: "gptme/llm/llm_anthropic.py"
+      lines: [814, 829]
+      function: "_spec2tool"
+      language: "python"
+
+    snippet: |
+      def _spec2tool(spec: ToolSpec) -> "anthropic.types.ToolParam":
+          name = spec.name
+          if spec.block_types:
+              name = spec.block_types[0]
+          return cast(
+              "anthropic.types.ToolParam",
+              {
+                  "name": name,
+                  "description": spec.get_instructions("tool"),
+                  "input_schema": parameters2dict(spec.parameters),
+              },
+          )
+
+    notes: "Full tool_use_id tracking. Tool results wrapped as tool_result content blocks."
+
 agents_sdk_features: {}
-  # agent_configuration:
-  #   model_selection: true
-  #   system_prompt_customization: true
-  #   tool_registration: true
-  #   max_turns_config: true
-  #   reference:
-  #     path: "src/agent.py"
-  #     lines: [10, 35]
-  #
-  # tool_patterns:
-  #   - tool_type: "bash"
-  #     description: "Shell command execution"
-  #     reference: ...
-  #     snippet: |
-  #       ...
-  #
-  # conversation_handling:
-  #   session_persistence: true
-  #   history_management: true
-  #   context_windowing: false
-  #   reference: ...
 
-# Quick reference of patterns used
-patterns_summary: {}
-  # messages-stream: true
-  # tool-use: true
-  # agent-create: false
+patterns_summary:
+  messages-stream: true
+  messages-create: true
+  tool-use: true
+  prompt-caching: true
+  extended-thinking: true
+  vision: true
+  web-search: true
+  constrained-output: true
+  mcp-integration: true
+  agent-create: false
