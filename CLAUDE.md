@@ -2,6 +2,24 @@
 
 This repository systematically analyzes how external projects integrate with Claude Code.
 
+## New Here? Start With These
+
+| Document | Purpose |
+|----------|---------|
+| `QUICKSTART.md` | **Start here** - 5-minute orientation |
+| `FUTURE_WORK.md` | What to work on next, prioritized |
+| `AGENTS.md` | Detailed research methodology |
+| `GUIDELINES.md` | Quality standards and best practices |
+| `WHY.md` | Motivation and context for this research |
+
+## First Commands
+
+```bash
+./scripts/research_status.py          # What's done/pending?
+./scripts/research_status.py --missing # What's missing?
+cat FUTURE_WORK.md                     # What to work on?
+```
+
 ## Mission
 
 Document **exactly how** projects integrate with Claude Code, with precise code references:
