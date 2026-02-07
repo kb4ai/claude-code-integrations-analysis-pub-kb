@@ -1,0 +1,190 @@
+# SDK Integration Analysis: claude-code-action
+# Spec: specs/sdk-integration.spec.yaml
+
+project: "claude-code-action"
+sdk_integration_detected: true
+
+summary: |
+  Uses @anthropic-ai/claude-agent-sdk v0.2.36 as primary integration. The query() async iterator
+  is the main entry point for Claude Code interactions. Supports model selection, tool restrictions,
+  system prompts, and session management. Plugin installation uses CLI subprocess.
+
+sdks_used:
+  - name: "claude-agent-sdk-typescript"
+    package: "@anthropic-ai/claude-agent-sdk"
+    version_constraint: "0.2.36"
+    import_reference:
+      path: "src/claude.ts"
+      lines: [1, 5]
+      snippet: |
+        import { query } from '@anthropic-ai/claude-agent-sdk'
+
+sdk_usage:
+
+  - id: query-async-iterator
+    sdk: "claude-agent-sdk-typescript"
+    pattern: "query-iterator"
+    description: "Primary Claude Code interaction via query() async iterator"
+
+    reference:
+      repository: "https://github.com/anthropics/claude-code-action"
+      commit: "db388438c199401cf36c143bb877ba3c3e6a9be5"
+      path: "src/claude.ts"
+      lines: [50, 120]
+      function: "runClaude"
+      language: "typescript"
+
+    api_methods:
+      - "query()"
+
+    parameters:
+      - name: "model"
+        value_type: "string"
+        purpose: "Model selection"
+        example_value: "claude-sonnet-4-5-20250929"
+      - name: "maxTurns"
+        value_type: "integer"
+        purpose: "Limit conversation turns"
+        example_value: "25"
+      - name: "allowedTools"
+        value_type: "string[]"
+        purpose: "Whitelist specific tools"
+      - name: "disallowedTools"
+        value_type: "string[]"
+        purpose: "Blacklist specific tools"
+      - name: "systemPrompt"
+        value_type: "string"
+        purpose: "Custom system prompt (preset type)"
+      - name: "fallbackModel"
+        value_type: "string"
+        purpose: "Fallback model if primary unavailable"
+      - name: "extraArgs"
+        value_type: "string[]"
+        purpose: "Additional CLI arguments passed through"
+      - name: "env"
+        value_type: "Record<string, string>"
+        purpose: "Environment variables for Claude process"
+      - name: "settingSources"
+        value_type: "object"
+        purpose: "Settings sources configuration"
+
+    snippet: |
+      const messages = query({
+        model: config.model,
+        maxTurns: config.maxTurns,
+        allowedTools: config.allowedTools,
+        disallowedTools: config.disallowedTools,
+        systemPrompt: config.systemPrompt,
+        fallbackModel: config.fallbackModel,
+        prompt: userPrompt,
+        env: {
+          ...process.env,
+          ANTHROPIC_API_KEY: config.apiKey,
+        },
+      });
+
+      for await (const message of messages) {
+        if (message.type === 'system' && message.subtype === 'init') {
+          sessionId = message.session_id;
+        }
+        // Process assistant messages, tool calls, results
+      }
+
+    notes: |
+      Async iterator pattern - yields messages in real-time.
+      Session ID extracted from system.init message.
+      Supports both tag mode (@claude) and full agent mode.
+
+    checklist_refs:
+      - "sdk-features.checklist.yaml#agent-configuration"
+      - "sdk-features.checklist.yaml#tool-registration"
+
+  - id: plugin-installation-cli
+    sdk: "claude-agent-sdk-typescript"
+    pattern: "cli-subprocess"
+    description: "Plugin installation via Claude CLI subprocess"
+
+    reference:
+      repository: "https://github.com/anthropics/claude-code-action"
+      commit: "db388438c199401cf36c143bb877ba3c3e6a9be5"
+      path: "src/plugins.ts"
+      lines: [10, 40]
+      function: "installPlugin"
+      language: "typescript"
+
+    api_methods:
+      - "child_process.execSync"
+
+    snippet: |
+      // Plugin installation uses CLI directly
+      execSync(`claude plugin install ${pluginName}`, {
+        env: { ...process.env, ANTHROPIC_API_KEY: apiKey },
+      });
+
+    notes: "Hybrid approach: SDK for queries, CLI for plugin management"
+
+  - id: session-id-extraction
+    sdk: "claude-agent-sdk-typescript"
+    pattern: "session-management"
+    description: "Extracts session ID from system.init message"
+
+    reference:
+      repository: "https://github.com/anthropics/claude-code-action"
+      commit: "db388438c199401cf36c143bb877ba3c3e6a9be5"
+      path: "src/claude.ts"
+      lines: [85, 100]
+      function: "runClaude"
+      language: "typescript"
+
+    snippet: |
+      for await (const message of messages) {
+        if (message.type === 'system' && message.subtype === 'init') {
+          sessionId = message.session_id;
+          // session_id used for conversation continuity
+        }
+      }
+
+    notes: "Session ID enables resume capability across GitHub Action runs"
+
+# Claude Agents SDK specific features
+agents_sdk_features:
+  agent_configuration:
+    model_selection: true
+    system_prompt_customization: true
+    tool_registration: true
+    max_turns_config: true
+    reference:
+      path: "src/claude.ts"
+      lines: [50, 120]
+
+  tool_patterns:
+    - tool_type: "allowed_tools"
+      description: "Whitelist specific tools via allowedTools parameter"
+    - tool_type: "disallowed_tools"
+      description: "Blacklist specific tools via disallowedTools parameter"
+    - tool_type: "mcp_servers"
+      description: "Custom MCP servers for GitHub comment/CI integration"
+
+  conversation_handling:
+    session_persistence: true
+    history_management: false
+    context_windowing: false
+    reference:
+      path: "src/claude.ts"
+      lines: [85, 100]
+
+  auth_providers:
+    - "Anthropic API (ANTHROPIC_API_KEY)"
+    - "AWS Bedrock"
+    - "Google Vertex AI"
+    - "Foundry"
+
+# Quick reference of patterns used
+patterns_summary:
+  query-iterator: true
+  tool-use: true
+  agent-create: false
+  messages-stream: false
+  session-management: true
+  plugin-installation: true
+  mcp-servers: true

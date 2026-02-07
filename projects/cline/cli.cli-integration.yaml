@@ -1,0 +1,149 @@
+# CLI Integration Analysis: Cline
+# Spec: specs/cli-integration.spec.yaml
+
+project: "cline"
+cli_integration_detected: true
+
+summary: |
+  Cline spawns Claude Code CLI via execa with stream-json output format.
+  Uses --max-turns 1 (Cline handles orchestration), --disallowedTools to restrict
+  Claude Code's built-in tools, and passes messages as JSON via stdin.
+
+invocations:
+
+  - id: claude-code-handler-spawn
+    description: "Spawns Claude Code binary for each request via execa"
+
+    reference:
+      repository: "https://github.com/cline/cline"
+      commit: "844038084c6e559ee131c32e5d5da93dcff68a73"
+      path: "src/integrations/claude-code/run.ts"
+      lines: [189, 242]
+      function: "runProcess"
+      language: "typescript"
+
+    command_pattern: "claude [--system-prompt|--system-prompt-file] {prompt} --verbose --output-format stream-json --disallowedTools {tools} --max-turns 1 --model {model} -p"
+
+    flags_used:
+      - flag: "--system-prompt"
+        value_type: "string"
+        purpose: "Pass system prompt directly (or --system-prompt-file for large prompts)"
+        checklist_ref: "cli-flags.checklist.yaml#system-prompt"
+
+      - flag: "--output-format"
+        value_type: "enum"
+        value_options: ["stream-json"]
+        purpose: "Streaming JSON output for real-time processing"
+        checklist_ref: "cli-flags.checklist.yaml#output-format"
+
+      - flag: "--verbose"
+        value_type: "flag"
+        purpose: "Required for stream-json output"
+        checklist_ref: "cli-flags.checklist.yaml#verbose"
+
+      - flag: "--disallowedTools"
+        value_type: "string"
+        purpose: "Disable Claude Code built-in tools (Task, Bash, Glob, etc.) - Cline handles tool execution"
+        checklist_ref: "cli-flags.checklist.yaml#disallowedTools"
+
+      - flag: "--max-turns"
+        value_type: "integer"
+        purpose: "Limit to 1 turn - Cline manages multi-turn orchestration"
+        checklist_ref: "cli-flags.checklist.yaml#max-turns"
+
+      - flag: "--model"
+        value_type: "string"
+        purpose: "Model selection (claude-sonnet-4-5-20250929, claude-opus, etc.)"
+        checklist_ref: "cli-flags.checklist.yaml#model"
+
+      - flag: "-p"
+        value_type: "flag"
+        purpose: "Print/pipe mode - messages passed via stdin as JSON"
+        checklist_ref: "cli-flags.checklist.yaml#print-prompt"
+
+    snippet: |
+      const args = [
+        shouldUseFile ? "--system-prompt-file" : "--system-prompt",
+        systemPrompt,
+        "--verbose",
+        "--output-format",
+        "stream-json",
+        "--disallowedTools",
+        claudeCodeTools,
+        "--max-turns",
+        "1",
+        "--model",
+        modelId,
+        "-p",
+      ];
+
+      const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        CLAUDE_CODE_MAX_OUTPUT_TOKENS: process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || "32000",
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
+        DISABLE_NON_ESSENTIAL_MODEL_CALLS: "1",
+        MAX_THINKING_TOKENS: (thinkingBudgetTokens || 0).toString(),
+      };
+      delete env["ANTHROPIC_API_KEY"];
+
+      const claudeCodeProcess = execa(claudePath, args, {
+        stdin: "pipe", stdout: "pipe", stderr: "pipe",
+        env, cwd, maxBuffer: BUFFER_SIZE, timeout: CLAUDE_CODE_TIMEOUT,
+      });
+      claudeCodeProcess.stdin.write(JSON.stringify(messages));
+      claudeCodeProcess.stdin.end();
+
+    environment_variables:
+      - name: "CLAUDE_CODE_MAX_OUTPUT_TOKENS"
+        purpose: "Max output tokens (default 32000)"
+      - name: "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"
+        purpose: "Disable telemetry (set to 1)"
+      - name: "DISABLE_NON_ESSENTIAL_MODEL_CALLS"
+        purpose: "Disable extra model calls (set to 1)"
+      - name: "MAX_THINKING_TOKENS"
+        purpose: "Thinking budget tokens"
+      - name: "ANTHROPIC_API_KEY"
+        purpose: "Explicitly REMOVED from env to let Claude Code handle auth"
+
+    notes: |
+      Unique pattern: --max-turns 1 + --disallowedTools to make Claude Code act as a
+      single-turn LLM call while Cline handles orchestration. Messages passed as JSON
+      via stdin. ANTHROPIC_API_KEY explicitly deleted from env. 10-minute timeout, 20MB buffer.
+
+flags_summary:
+  "--system-prompt":
+    used: true
+    invocation_ids: ["claude-code-handler-spawn"]
+    notes: "Or --system-prompt-file for large prompts"
+  "--output-format":
+    used: true
+    invocation_ids: ["claude-code-handler-spawn"]
+    notes: "Always stream-json"
+  "--verbose":
+    used: true
+    invocation_ids: ["claude-code-handler-spawn"]
+    notes: "Required for stream-json"
+  "--disallowedTools":
+    used: true
+    invocation_ids: ["claude-code-handler-spawn"]
+    notes: "Disables Claude Code built-in tools"
+  "--max-turns":
+    used: true
+    invocation_ids: ["claude-code-handler-spawn"]
+    notes: "Always 1 - Cline handles orchestration"
+  "--model":
+    used: true
+    invocation_ids: ["claude-code-handler-spawn"]
+    notes: "Model selection from UI"
+  "-p":
+    used: true
+    invocation_ids: ["claude-code-handler-spawn"]
+    notes: "Print mode with stdin JSON input"
+  "--dangerously-skip-permissions":
+    used: false
+    invocation_ids: []
+    notes: "NOT used - Cline handles permissions"
+  "--session":
+    used: false
+    invocation_ids: []
+    notes: "NOT used - stateless per-request"

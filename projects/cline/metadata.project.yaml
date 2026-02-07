@@ -1,0 +1,29 @@
+# Project Metadata: Cline
+# Spec: specs/project.spec.yaml
+
+name: "cline"
+display_name: "Cline (VS Code Extension)"
+repository: "https://github.com/cline/cline"
+description: "VS Code AI coding assistant with dual integration: direct Anthropic SDK for API access and Claude Code CLI as a provider backend"
+analyzed_commit: "844038084c6e559ee131c32e5d5da93dcff68a73"
+analyzed_at: "2026-02-07"
+
+website: ""
+documentation: ""
+license: "Apache-2.0"
+primary_language: "TypeScript"
+languages: [TypeScript]
+tags: [vscode-extension, coding-assistant, multi-provider, cli, sdk]
+
+integration_types: [cli, sdk]
+
+analysis_status: "comprehensive"
+
+notes: |
+  Cline has TWO distinct Claude integration paths:
+  1. AnthropicHandler - direct @anthropic-ai/sdk v0.37.0 with streaming, prompt caching, extended thinking
+  2. ClaudeCodeHandler - spawns Claude Code binary via execa with stream-json output
+  Both are first-class providers with UI configuration. Claude Code provider disables images
+  and prompt caching since CLI doesn't support those features directly.
+
+related_projects: ["goose", "claude-code-action"]
