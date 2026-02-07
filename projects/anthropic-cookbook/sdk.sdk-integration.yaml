@@ -1,98 +1,250 @@
-# SDK Integration Analysis Template
+# SDK Integration Analysis: Anthropic Cookbook
 # Spec: specs/sdk-integration.spec.yaml
-#
-# Delete this file if the project does NOT use Anthropic/Claude SDKs.
-# Otherwise, document all SDK usage patterns found.
 
-project: "_template"  # TODO: Must match metadata.project.yaml name
-sdk_integration_detected: false  # TODO: Set to true if SDK usage found
+project: "anthropic-cookbook"
+sdk_integration_detected: true
 
-summary: ""  # TODO: Brief summary of SDK integration approach
+summary: |
+  Anthropic's official cookbook with canonical examples of all Claude integration patterns.
+  Claude Agent SDK tutorials (ClaudeSDKClient + ClaudeAgentOptions), direct Anthropic SDK
+  usage (messages.create, messages.stream), extended thinking, prompt caching, tool use,
+  vision, MCP server integration, memory tool (beta), batch processing, and Claude Code
+  commands/skills. Serves as the authoritative reference for Claude Code integration patterns.
 
-# List all SDKs used
-sdks_used: []
-  # Example:
-  # - name: "anthropic-python"
-  #   package: "anthropic"
-  #   version_constraint: ">=0.25.0"
-  #   import_reference:
-  #     path: "src/client.py"
-  #     lines: [1, 3]
-  #     snippet: |
-  #       from anthropic import Anthropic
-  #       from anthropic.types import Message
+sdks_used:
+  - name: "claude-agent-sdk"
+    package: "claude-agent-sdk"
+    version_constraint: ">=0.0.20"
+    import_reference:
+      path: "claude_agent_sdk/research_agent/agent.py"
+      lines: [1, 5]
+      snippet: |
+        from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 
-# Document each SDK usage pattern
-sdk_usage: []
-  # Example:
-  # - id: streaming-messages
-  #   sdk: "anthropic-python"
-  #   pattern: "messages-stream"
-  #   description: "Uses streaming API for real-time response display"
-  #
-  #   reference:
-  #     repository: "https://github.com/org/repo"
-  #     commit: "abc123..."
-  #     path: "src/claude/streaming.py"
-  #     lines: [45, 68]
-  #     function: "stream_response"
-  #     language: "python"
-  #
-  #   api_methods:
-  #     - "client.messages.stream"
-  #     - "stream.text_stream"
-  #
-  #   parameters:
-  #     - name: "model"
-  #       value_type: "string"
-  #       purpose: "Model selection"
-  #       example_value: "claude-sonnet-4-20250514"
-  #
-  #     - name: "max_tokens"
-  #       value_type: "integer"
-  #       purpose: "Response length limit"
-  #       example_value: "4096"
-  #
-  #   snippet: |
-  #     with client.messages.stream(
-  #         model="claude-sonnet-4-20250514",
-  #         max_tokens=4096,
-  #         messages=messages
-  #     ) as stream:
-  #         for text in stream.text_stream:
-  #             yield text
-  #
-  #   notes: "Context manager ensures proper cleanup"
-  #
-  #   checklist_refs:
-  #     - "sdk-features.checklist.yaml#messages-stream"
+  - name: "anthropic-python"
+    package: "anthropic"
+    version_constraint: "*"
+    import_reference:
+      path: "extended_thinking/extended_thinking.ipynb"
+      lines: [1, 3]
+      snippet: |
+        import anthropic
+        client = anthropic.Anthropic()
 
-# Claude Agents SDK specific features (if used)
-agents_sdk_features: {}
-  # agent_configuration:
-  #   model_selection: true
-  #   system_prompt_customization: true
-  #   tool_registration: true
-  #   max_turns_config: true
-  #   reference:
-  #     path: "src/agent.py"
-  #     lines: [10, 35]
-  #
-  # tool_patterns:
-  #   - tool_type: "bash"
-  #     description: "Shell command execution"
-  #     reference: ...
-  #     snippet: |
-  #       ...
-  #
-  # conversation_handling:
-  #   session_persistence: true
-  #   history_management: true
-  #   context_windowing: false
-  #   reference: ...
+sdk_usage:
 
-# Quick reference of patterns used
-patterns_summary: {}
-  # messages-stream: true
-  # tool-use: true
-  # agent-create: false
+  - id: agent-sdk-research
+    sdk: "claude-agent-sdk"
+    pattern: "agent-create"
+    description: "One-liner research agent using ClaudeSDKClient async iterator pattern"
+
+    reference:
+      repository: "https://github.com/anthropics/anthropic-cookbook"
+      commit: "7cb72a9c879e3b95f58d30a3d7483906e9ad548e"
+      path: "claude_agent_sdk/research_agent/agent.py"
+      lines: [1, 80]
+      function: "send_query"
+      language: "python"
+
+    api_methods:
+      - "ClaudeSDKClient"
+      - "agent.query"
+      - "agent.receive_response"
+
+    parameters:
+      - name: "model"
+        value_type: "string"
+        purpose: "Model selection"
+        example_value: "claude-opus-4-5"
+      - name: "allowed_tools"
+        value_type: "list"
+        purpose: "Tool restrictions"
+        example_value: '["WebSearch", "Read"]'
+      - name: "system_prompt"
+        value_type: "string"
+        purpose: "Agent system prompt"
+      - name: "continue_conversation"
+        value_type: "boolean"
+        purpose: "Session continuation"
+      - name: "max_buffer_size"
+        value_type: "integer"
+        purpose: "Response buffer size (10MB)"
+
+    snippet: |
+      options = ClaudeAgentOptions(
+          model=model,
+          allowed_tools=["WebSearch", "Read"],
+          continue_conversation=continue_conversation,
+          system_prompt=RESEARCH_SYSTEM_PROMPT,
+          max_buffer_size=10 * 1024 * 1024,
+      )
+      async with ClaudeSDKClient(options=options) as agent:
+          await agent.query(prompt=prompt)
+          async for msg in agent.receive_response():
+              messages.append(msg)
+
+    notes: "Canonical one-liner agent pattern. Default model: claude-opus-4-5."
+
+  - id: agent-sdk-chief-of-staff
+    sdk: "claude-agent-sdk"
+    pattern: "agent-create"
+    description: "Advanced agent with subagent delegation, permission modes, hooks, and custom commands"
+
+    reference:
+      repository: "https://github.com/anthropics/anthropic-cookbook"
+      commit: "7cb72a9c879e3b95f58d30a3d7483906e9ad548e"
+      path: "claude_agent_sdk/chief_of_staff_agent/agent.py"
+      lines: [1, 100]
+      function: "send_query"
+      language: "python"
+
+    parameters:
+      - name: "permission_mode"
+        value_type: "string"
+        purpose: "Execution permission level"
+        example_value: "acceptEdits"
+      - name: "allowed_tools"
+        value_type: "list"
+        purpose: "Includes Task for subagent delegation"
+        example_value: '["Task", "Read", "Write", "Edit", "Bash", "WebSearch"]'
+      - name: "setting_sources"
+        value_type: "list"
+        purpose: "Settings file sources"
+        example_value: '["project", "local"]'
+      - name: "cwd"
+        value_type: "string"
+        purpose: "Working directory for agent"
+
+    snippet: |
+      options = ClaudeAgentOptions(
+          model="claude-opus-4-5",
+          allowed_tools=["Task", "Read", "Write", "Edit", "Bash", "WebSearch"],
+          continue_conversation=continue_conversation,
+          system_prompt=system_prompt,
+          permission_mode=permission_mode,
+          cwd=os.path.dirname(os.path.abspath(__file__)),
+          settings=settings,
+          setting_sources=["project", "local"],
+      )
+
+    notes: |
+      Demonstrates: Task tool for subagent delegation, permission modes (default/plan/acceptEdits),
+      .claude/agents/ directory for agent definitions, .claude/commands/ for slash commands,
+      .claude/output-styles/ for output formatting, .claude/hooks/ for automation.
+
+  - id: agent-sdk-mcp-observability
+    sdk: "claude-agent-sdk"
+    pattern: "mcp-integration"
+    description: "Agent with Docker-containerized MCP servers for GitHub and git operations"
+
+    reference:
+      repository: "https://github.com/anthropics/anthropic-cookbook"
+      commit: "7cb72a9c879e3b95f58d30a3d7483906e9ad548e"
+      path: "claude_agent_sdk/observability_agent/agent.py"
+      lines: [1, 100]
+      function: "send_query"
+      language: "python"
+
+    api_methods:
+      - "McpServerConfig"
+
+    snippet: |
+      mcp_servers = {
+          "github": {
+              "command": "docker",
+              "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+                       "ghcr.io/github/github-mcp-server"],
+              "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": token},
+          }
+      }
+      options = ClaudeAgentOptions(
+          mcp_servers=servers,
+          allowed_tools=["mcp__github"],
+          disallowed_tools=["Bash", "Task", "WebSearch", "WebFetch"],
+          permission_mode="acceptEdits",
+      )
+
+    notes: |
+      Pattern: mcp__{server_name} for allowed_tools. Disallowed tools prevent MCP bypass.
+      Docker-containerized for isolation. GitHub + git MCP servers demonstrated.
+
+  - id: extended-thinking-example
+    sdk: "anthropic-python"
+    pattern: "extended-thinking"
+    description: "Canonical extended thinking pattern with streaming and tool use"
+
+    reference:
+      repository: "https://github.com/anthropics/anthropic-cookbook"
+      commit: "7cb72a9c879e3b95f58d30a3d7483906e9ad548e"
+      path: "extended_thinking/extended_thinking.ipynb"
+      lines: [1, 50]
+      language: "python"
+
+    snippet: |
+      response = client.messages.create(
+          model="claude-sonnet-4-5",
+          max_tokens=4000,
+          thinking={"type": "enabled", "budget_tokens": 2000},
+          messages=[{"role": "user", "content": "Solve this puzzle: ..."}]
+      )
+      for block in response.content:
+          if block.type == "thinking":
+              print(f"THINKING: {block.thinking}")
+          elif block.type == "text":
+              print(f"ANSWER: {block.text}")
+
+    notes: |
+      Constraints: min budget 1024 tokens, temperature must be 1, incompatible with top_p/top_k.
+      Response blocks include thinking (with signature), redacted_thinking, and text.
+
+  - id: memory-tool-beta
+    sdk: "anthropic-python"
+    pattern: "memory-tool"
+    description: "Beta memory tool with context management for persistent agent memory"
+
+    reference:
+      repository: "https://github.com/anthropics/anthropic-cookbook"
+      commit: "7cb72a9c879e3b95f58d30a3d7483906e9ad548e"
+      path: "tool_use/memory_tool.py"
+      lines: [1, 50]
+      language: "python"
+
+    snippet: |
+      response = client.beta.messages.create(
+          model=MODEL,
+          max_tokens=4096,
+          system=system_prompt,
+          messages=messages,
+          tools=[{"type": "memory_20250818", "name": "memory"}],
+          betas=["context-management-2025-06-27"],
+          context_management=CONTEXT_MANAGEMENT,
+      )
+
+    notes: |
+      Beta feature. Memory commands: view, create, str_replace, insert, delete, rename.
+      Context management auto-clears old tool uses at token threshold.
+
+agents_sdk_features:
+  query_async_iterator: true
+  session_management: true
+  permission_modes: true
+  subagent_delegation: true
+  mcp_servers: true
+  custom_commands: true
+  output_styles: true
+  hooks: true
+
+patterns_summary:
+  agent-create: true
+  agent-run: true
+  messages-create: true
+  messages-stream: true
+  tool-use: true
+  prompt-caching: true
+  extended-thinking: true
+  vision: true
+  mcp-integration: true
+  memory-tool: true
+  batch-processing: true
+  conversation-management: true
+  error-handling: true

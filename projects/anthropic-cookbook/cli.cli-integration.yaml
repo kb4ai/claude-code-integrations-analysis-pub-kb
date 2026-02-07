@@ -1,77 +1,56 @@
-# CLI Integration Analysis Template
+# CLI Integration Analysis: Anthropic Cookbook
 # Spec: specs/cli-integration.spec.yaml
-#
-# Delete this file if the project does NOT use Claude Code CLI.
-# Otherwise, document all CLI invocations found.
 
-project: "_template"  # TODO: Must match metadata.project.yaml name
-cli_integration_detected: false  # TODO: Set to true if CLI usage found
+project: "anthropic-cookbook"
+cli_integration_detected: true
 
-summary: ""  # TODO: Brief summary of CLI integration approach
+summary: |
+  Uses Claude Code via .claude/commands/ (7 custom slash commands) and .claude/skills/
+  (cookbook-audit skill). GitHub Actions workflows invoke Claude Code for automated
+  PR review, model checking, link review, and notebook quality. The Claude Agent SDK
+  tutorials demonstrate ClaudeSDKClient which spawns Claude Code internally.
 
-# Document each CLI invocation found
-invocations: []
-  # Example invocation entry:
-  # - id: main-prompt-invocation
-  #   description: "Primary method for sending prompts to Claude"
-  #
-  #   reference:
-  #     repository: "https://github.com/org/repo"
-  #     commit: "abc123..."  # Full 40-char SHA
-  #     path: "src/claude/client.py"
-  #     lines: [142, 158]
-  #     function: "invoke_claude"
-  #     class: "ClaudeClient"
-  #     language: "python"
-  #
-  #   command_pattern: "claude --session {uuid} --output-format streaming-json -p {prompt}"
-  #
-  #   flags_used:
-  #     - flag: "--session"
-  #       value_type: "uuid"
-  #       purpose: "Session persistence for multi-turn conversations"
-  #       checklist_ref: "cli-flags.checklist.yaml#session-uuid"
-  #
-  #     - flag: "--output-format"
-  #       value_type: "enum"
-  #       value_options: ["text", "json", "streaming-json"]
-  #       purpose: "Get structured streaming output for real-time display"
-  #       checklist_ref: "cli-flags.checklist.yaml#output-format"
-  #
-  #     - flag: "-p"
-  #       value_type: "string"
-  #       purpose: "Non-interactive prompt input"
-  #       checklist_ref: "cli-flags.checklist.yaml#print-prompt"
-  #
-  #   snippet: |
-  #     def invoke_claude(self, prompt: str) -> str:
-  #         cmd = [
-  #             "claude",
-  #             "--session", self.session_id,
-  #             "--output-format", "streaming-json",
-  #             "-p", prompt
-  #         ]
-  #         result = subprocess.run(cmd, capture_output=True, text=True)
-  #         return self._parse_response(result.stdout)
-  #
-  #   environment_variables:
-  #     - name: "ANTHROPIC_API_KEY"
-  #       purpose: "API authentication"
-  #
-  #   notes: "Uses subprocess.run for synchronous execution"
-  #
-  #   related_invocations:
-  #     - "projects/other-project/cli.cli-integration.yaml#similar-invocation"
+invocations:
 
-# Summary of all flags used (quick reference)
-flags_summary: {}
-  # Example:
-  # "--session":
-  #   used: true
-  #   invocation_ids: ["main-prompt-invocation"]
-  #   notes: "Used for all multi-turn conversations"
-  #
-  # "--dangerously-skip-permissions":
-  #   used: false
-  #   invocation_ids: []
-  #   notes: "Not used - permissions handled interactively"
+  - id: claude-commands
+    description: "7 custom Claude Code commands for repository operations"
+
+    reference:
+      repository: "https://github.com/anthropics/anthropic-cookbook"
+      commit: "7cb72a9c879e3b95f58d30a3d7483906e9ad548e"
+      path: ".claude/commands/notebook-review.md"
+      lines: [1, 10]
+      language: "yaml"
+
+    snippet: |
+      ---
+      allowed-tools: Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(echo:*),Read,Glob,Grep,WebFetch
+      description: Comprehensive review of Jupyter notebooks and Python scripts
+      ---
+      Review the specified Jupyter notebooks and Python scripts using the Notebook review skill.
+
+    notes: |
+      Commands: /notebook-review, /model-check, /link-review, /review-pr,
+      /add-registry, /review-issue, /review-pr-ci. Each specifies allowed-tools
+      in YAML frontmatter for tool restriction.
+
+  - id: claude-skills
+    description: "Cookbook audit skill with validation scripts and scoring rubrics"
+
+    reference:
+      repository: "https://github.com/anthropics/anthropic-cookbook"
+      commit: "7cb72a9c879e3b95f58d30a3d7483906e9ad548e"
+      path: ".claude/skills/cookbook-audit/SKILL.md"
+      lines: [1, 30]
+      language: "markdown"
+
+    notes: |
+      Skill at .claude/skills/cookbook-audit/ with SKILL.md, style_guide.md,
+      validate_notebook.py. Scores notebooks on 4 dimensions: Narrative Quality,
+      Code Quality, Technical Accuracy, Actionability.
+
+flags_summary:
+  "allowed-tools":
+    used: true
+    invocation_ids: ["claude-commands"]
+    notes: "Tool restrictions specified per command in YAML frontmatter"
