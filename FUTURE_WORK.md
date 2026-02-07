@@ -2,42 +2,51 @@
 
 Roadmap for Claude Code integrations research.
 
-## Immediate Priorities
+## Completed
 
-### 1. Analyze Core Projects (High Priority)
+### 1. Core Project Analysis (12/12 Complete)
 
-These projects are known to integrate with Claude Code and should be analyzed first:
+All core projects have been analyzed to "comprehensive" status:
 
-| Project | Repository | Why Important |
-|---------|------------|---------------|
-| **goose** | https://github.com/block/goose | Block's AI assistant; likely uses CLI integration patterns |
-| **aider** | https://github.com/paul-gauthier/aider | Popular AI coding tool; may use SDK or CLI |
-| **cline** | https://github.com/cline/cline | VS Code Claude extension; direct Claude integration |
-| **continue** | https://github.com/continuedev/continue | IDE extension; multi-model including Claude |
-| **claude-dev** | Search GitHub | Official Anthropic examples/templates |
+| # | Project | Type | Key Finding |
+|---|---------|------|-------------|
+| 1 | goose | CLI | Persistent subprocess, bidirectional NDJSON |
+| 2 | aider | SDK | LiteLLM + cache warming (background thread) |
+| 3 | continue | SDK | Direct SDK + 4 caching strategies + Azure detection |
+| 4 | cline | CLI+SDK | Dual integration, --max-turns 1 + --disallowedTools |
+| 5 | claude-code-action | SDK | Official Agent SDK, query() async iterator |
+| 6 | claude-code-mcp | CLI | Per-request spawn, agent-in-agent MCP wrapper |
+| 7 | claude-flow | CLI | Multi-instance spawn, DAG orchestration |
+| 8 | openhands | SDK | LiteLLM + model-specific workarounds |
+| 9 | fastmcp | SDK+CLI | MCP sampling + `claude mcp add` + skills |
+| 10 | gptme | SDK | Richest Anthropic SDK feature set |
+| 11 | alphacodium | SDK | Minimal LiteLLM (GPT-4 default, Claude optional) |
+| 12 | anthropic-cookbook | All | Official canonical examples for all patterns |
 
-**Action for each:**
+### 2. Comparison Tables
 
-```bash
-# 1. Add submodule
-git submodule add https://github.com/{org}/{repo}.git submodules/{name}
+* [x] `reports/generated/comparison.md` auto-generated
+* [x] `reports/generated/summary.json` auto-generated
+* [x] `reports/committed/comparison.md` committed snapshot
 
-# 2. Copy template
-cp -r projects/_template projects/{name}
+### 3. Pattern Extraction Reports
 
-# 3. Update metadata
-# Edit projects/{name}/metadata.project.yaml
+* [x] `reports/committed/patterns/cli-integration-patterns.md` - 5 CLI patterns
+* [x] `reports/committed/patterns/sdk-integration-patterns.md` - 3 SDK layers + features
+* [x] `reports/committed/patterns/decision-guide.md` - Integration decision tree
 
-# 4. Run discovery (see AGENTS.md Phase 1)
-cd submodules/{name}
-rg -i "claude" --type py --type ts
+### 4. Success Criteria Met
 
-# 5. Document findings in YAML files
-# 6. Verify
-./scripts/verify_yamls.py projects/{name}/
-```
+* [x] At least 5 projects analyzed to "comprehensive" status (12 achieved)
+* [x] Common patterns documented in reports/
+* [x] Comparison tables generated and meaningful
+* [x] Fresh agent can understand and continue work from docs alone
 
-### 2. Discover Additional Projects
+## Remaining Priorities
+
+### Medium Priority
+
+#### 5. Discover Additional Projects
 
 Search for more projects integrating with Claude Code:
 
@@ -48,65 +57,35 @@ Search for more projects integrating with Claude Code:
 # - "from anthropic import" language:python
 # - "@anthropic-ai/sdk" language:typescript
 # - "claude-agents-sdk"
-# - "claude code" integration
+# - "@anthropic-ai/claude-agent-sdk"
 ```
 
-Document discovered projects in `DISCOVERED_PROJECTS.md` before analyzing.
+See `DISCOVERED_PROJECTS.md` for the full discovery list (50+ candidates).
+Many may be trivial wrappers; prioritize projects with unique integration patterns.
 
-### 3. Complete Checklist Coverage
+#### 6. SDK Deep Dive
 
-For each analyzed project, ensure all applicable checklist items are investigated:
+Investigate Claude Agents SDK specifically:
+
+* Official documentation analysis (latest API reference)
+* TypeScript vs Python SDK differences
+* query() vs ClaudeSDKClient API comparison
+* Version history and breaking changes
+
+#### 7. Checklist Gap Analysis
+
+For each analyzed project, verify all applicable checklist items are covered:
 
 * [ ] `checklists/cli-flags.checklist.yaml` - All CLI flags documented
 * [ ] `checklists/sdk-features.checklist.yaml` - All SDK patterns documented
 * [ ] `checklists/skills-plugins.checklist.yaml` - Skills/plugins support checked
 * [ ] `checklists/research-completeness.checklist.yaml` - Quality criteria met
 
-## Medium-Term Goals
+Run `./scripts/research_status.py --missing` to identify specific gaps.
 
-### 4. Pattern Extraction
+### Low Priority
 
-After analyzing 3+ projects, extract common patterns:
-
-* **Session management patterns** - How do projects handle `--session`/`--resume`?
-* **Output parsing patterns** - How is `--output-format=streaming-json` parsed?
-* **Permission handling** - When/why is `--dangerously-skip-permissions` used?
-* **Error recovery** - How do projects handle CLI/SDK errors?
-
-Document in `reports/committed/patterns/`.
-
-### 5. Comparison Reports
-
-Generate and commit comparison reports:
-
-```bash
-./scripts/regenerate_comparison_tables_and_reports.py
-cp reports/generated/comparison.md reports/committed/
-git add reports/committed/
-git commit -m "Update comparison report"
-```
-
-### 6. SDK Deep Dive
-
-Investigate Claude Agents SDK specifically:
-
-* Official documentation analysis
-* Example code from Anthropic
-* Third-party SDK wrappers
-* TypeScript vs Python SDK differences
-
-## Long-Term Goals
-
-### 7. Best Practices Guide
-
-Synthesize findings into actionable guidance:
-
-* "How to integrate with Claude Code CLI"
-* "CLI vs SDK: When to use which"
-* "Session management best practices"
-* "Streaming output handling patterns"
-
-### 8. Automation Improvements
+#### 8. Automation Improvements
 
 Enhance scripts:
 
@@ -115,11 +94,21 @@ Enhance scripts:
 * [ ] `scripts/update_submodules.py` - Batch update and re-analyze
 * [ ] `scripts/coverage_report.py` - Detailed checklist coverage
 
-### 9. Keep Analysis Current
+#### 9. Keep Analysis Current
 
 * Set up periodic review (monthly?) to update analyses
 * Track Claude Code CLI/SDK version changes
 * Document breaking changes in integration patterns
+* When updating, bump `analyzed_commit` and `analyzed_at` fields
+
+#### 10. Expand Pattern Reports
+
+Additional reports that could be valuable:
+
+* Error handling patterns across projects
+* Authentication and API key management patterns
+* Session lifecycle management patterns
+* Tool restriction strategies comparison
 
 ## How to Pick What to Work On
 
@@ -130,19 +119,7 @@ Enhance scripts:
 # 2. See what's missing
 ./scripts/research_status.py --missing
 
-# 3. Pick highest priority incomplete item:
-#    - Projects with status "pending" → start analysis
-#    - Projects with status "minimal" → expand to comprehensive
-#    - No projects? → Add from priority list above
+# 3. Pick highest priority incomplete item from this file
 
 # 4. Follow AGENTS.md methodology
 ```
-
-## Success Criteria
-
-This research is "done enough" when:
-
-* [ ] At least 5 projects analyzed to "comprehensive" status
-* [ ] Common patterns documented in reports/
-* [ ] Comparison tables generated and meaningful
-* [ ] Fresh agent can understand and continue work from docs alone
