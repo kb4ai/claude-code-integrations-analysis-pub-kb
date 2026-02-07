@@ -1,36 +1,31 @@
-# Project Metadata Template
+# Project Metadata: AlphaCodium
 # Spec: specs/project.spec.yaml
-#
-# Instructions:
-# 1. Copy this directory: cp -r projects/_template projects/{project-name}
-# 2. Fill in all fields marked with TODO
-# 3. Run: ./scripts/verify_yamls.py projects/{project-name}/
 
-name: "_template"  # TODO: Change to project name (must match directory name)
-display_name: "Project Display Name"  # TODO: Human-readable name
-repository: "https://github.com/org/repo"  # TODO: HTTPS URL (not SSH)
-description: "Brief description of the project"  # TODO: 1-2 sentences
-analyzed_commit: "0000000000000000000000000000000000000000"  # TODO: Full 40-char SHA
-analyzed_at: "YYYY-MM-DD"  # TODO: Date of analysis
+name: "alphacodium"
+display_name: "AlphaCodium"
+repository: "https://github.com/Codium-ai/AlphaCodium"
+description: "Code generation framework using LiteLLM abstraction layer; supports Claude models via configuration but has no direct Anthropic SDK or Claude CLI integration"
+analyzed_commit: "eb7577dbe998ae7e55696264591ac3c5dde75638"
+analyzed_at: "2026-02-07"
 
-# Optional fields
-website: ""  # Project website if different from repo
-documentation: ""  # Documentation URL
-license: ""  # e.g., MIT, Apache-2.0
-primary_language: ""  # e.g., Python, TypeScript
-languages: []  # e.g., [Python, TypeScript, Rust]
-tags: []  # e.g., [cli, vscode-extension, coding-assistant]
+website: ""
+documentation: ""
+license: "AGPL-3.0"
+primary_language: "Python"
+languages: [Python]
+tags: [code-generation, litellm, multi-provider, benchmark]
 
-# Integration types detected (update as you analyze)
-# Valid values: cli, sdk, skills, plugins, marketplace, mcp
-integration_types: []
+integration_types: [sdk]
 
-# Analysis status
-# Valid values: pending, minimal, in-progress, comprehensive
-analysis_status: "pending"
+analysis_status: "comprehensive"
 
-# Notes about the project or analysis
-notes: ""
+notes: |
+  Minimal Claude integration: uses LiteLLM acompletion() as abstraction layer.
+  No direct Anthropic SDK import, no Claude CLI invocation.
+  Claude models supported via LiteLLM routing (model name prefix determines provider).
+  Default model is GPT-4; Claude usable by setting model="claude-3-opus" in config.
+  Features: async completion, model fallback chains, rate limiting, configurable timeout.
+  README mentions Claude 3 Opus benchmarking on AlphaCodium leaderboard.
+  Token encoding defaults to cl100k_base for non-GPT models.
 
-# Related projects in this repository
-related_projects: []
+related_projects: ["aider", "openhands"]
