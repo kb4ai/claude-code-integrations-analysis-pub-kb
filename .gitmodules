@@ -1,0 +1,36 @@
+[submodule "submodules/goose"]
+	path = submodules/goose
+	url = https://github.com/block/goose.git
+[submodule "submodules/aider"]
+	path = submodules/aider
+	url = https://github.com/paul-gauthier/aider.git
+[submodule "submodules/cline"]
+	path = submodules/cline
+	url = https://github.com/cline/cline.git
+[submodule "submodules/continue"]
+	path = submodules/continue
+	url = https://github.com/continuedev/continue.git
+[submodule "submodules/alphacodium"]
+	path = submodules/alphacodium
+	url = https://github.com/Codium-ai/AlphaCodium.git
+[submodule "submodules/openhands"]
+	path = submodules/openhands
+	url = https://github.com/All-Hands-AI/OpenHands.git
+[submodule "submodules/fastmcp"]
+	path = submodules/fastmcp
+	url = https://github.com/jlowin/fastmcp.git
+[submodule "submodules/anthropic-cookbook"]
+	path = submodules/anthropic-cookbook
+	url = https://github.com/anthropics/anthropic-cookbook.git
+[submodule "submodules/gptme"]
+	path = submodules/gptme
+	url = https://github.com/ErikBjare/gptme.git
+[submodule "submodules/claude-code-action"]
+	path = submodules/claude-code-action
+	url = https://github.com/anthropics/claude-code-action.git
+[submodule "submodules/claude-code-mcp"]
+	path = submodules/claude-code-mcp
+	url = https://github.com/steipete/claude-code-mcp.git
+[submodule "submodules/claude-flow"]
+	path = submodules/claude-flow
+	url = https://github.com/ruvnet/claude-flow.git
