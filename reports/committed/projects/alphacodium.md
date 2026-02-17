@@ -73,23 +73,29 @@ response = await acompletion(
 Automatic model fallback chain on failure
 
 
-**Source:** [`alpha_codium/llm/ai_invoker.py` L8-L49](https://github.com/Codium-ai/AlphaCodium/blob/eb7577dbe998ae7e55696264591ac3c5dde75638/alpha_codium/llm/ai_invoker.py#L8-L49)
+**Source:** [`alpha_codium/llm/ai_invoker.py` L8-L23](https://github.com/Codium-ai/AlphaCodium/blob/eb7577dbe998ae7e55696264591ac3c5dde75638/alpha_codium/llm/ai_invoker.py#L8-L23)
   • Function: `send_inference`
 
 
 
 
 ```python
-all_models = _get_all_models()
-all_deployments = _get_all_deployments(all_models)
-for i, (model, deployment_id) in enumerate(zip(all_models, all_deployments)):
-    try:
-        get_settings().set("openai.deployment_id", deployment_id)
-        return await f(model)
-    except Exception:
-        logging.warning(f"Failed to generate prediction with {model}...")
-        if i == len(all_models) - 1:
-            raise```
+async def send_inference(f: Callable):
+    all_models = _get_all_models()
+    all_deployments = _get_all_deployments(all_models)
+    # try each (model, deployment_id) pair until one is successful, otherwise raise exception
+    for i, (model, deployment_id) in enumerate(zip(all_models, all_deployments)):
+        try:
+            get_settings().set("openai.deployment_id", deployment_id)
+            return await f(model)
+        except Exception:
+            logging.warning(
+                f"Failed to generate prediction with {model}"
+                f"{(' from deployment ' + deployment_id) if deployment_id else ''}: "
+                f"{traceback.format_exc()}"
+            )
+            if i == len(all_models) - 1:  # If it's the last iteration
+                raise  # Re-raise the last exception```
 
 
 

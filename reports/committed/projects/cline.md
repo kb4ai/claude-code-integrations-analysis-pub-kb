@@ -133,22 +133,37 @@ Primary streaming message creation with prompt caching and extended thinking
 
 
 ```typescript
-stream = await client.messages.create({
-  model: modelId,
-  thinking: reasoningOn ? { type: "enabled", budget_tokens } : undefined,
-  max_tokens: model.info.maxTokens || 8192,
-  temperature: reasoningOn ? undefined : 0,
-  system: [{
-    text: systemPrompt, type: "text",
-    cache_control: { type: "ephemeral" },
-  }],
-  messages: anthropicMessages,
-  stream: true,
-  tools: nativeToolsOn ? tools : undefined,
-  tool_choice: nativeToolsOn && !reasoningOn ? { type: "any" } : undefined,
-}, enable1mContextWindow ? {
-  headers: { "anthropic-beta": "context-1m-2025-08-07" },
-} : undefined);```
+stream = await client.messages.create(
+  {
+    model: modelId,
+    thinking: reasoningOn ? { type: "enabled", budget_tokens: budget_tokens } : undefined,
+    max_tokens: model.info.maxTokens || 8192,
+    temperature: reasoningOn ? undefined : 0,
+    system: [
+      {
+        text: systemPrompt,
+        type: "text",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: anthropicMessages,
+    stream: true,
+    tools: nativeToolsOn ? tools : undefined,
+    tool_choice: nativeToolsOn && !reasoningOn ? { type: "any" } : undefined,
+  },
+  (() => {
+    // 1m context window beta header
+    if (enable1mContextWindow) {
+      return {
+        headers: {
+          "anthropic-beta": "context-1m-2025-08-07",
+        },
+      }
+    } else {
+      return undefined
+    }
+  })(),
+)```
 
 
 
@@ -161,7 +176,7 @@ stream = await client.messages.create({
 Processes streaming events including thinking, text, and tool_use blocks
 
 
-**Source:** [`src/core/api/providers/anthropic.ts` L120-L240](https://github.com/cline/cline/blob/844038084c6e559ee131c32e5d5da93dcff68a73/src/core/api/providers/anthropic.ts#L120-L240)
+**Source:** [`src/core/api/providers/anthropic.ts` L120-L239](https://github.com/cline/cline/blob/844038084c6e559ee131c32e5d5da93dcff68a73/src/core/api/providers/anthropic.ts#L120-L239)
   • Function: `createMessage`
   • Class: `AnthropicHandler`
 
@@ -171,30 +186,80 @@ Processes streaming events including thinking, text, and tool_use blocks
 for await (const chunk of stream) {
   switch (chunk?.type) {
     case "message_start":
-      // Usage tracking: cache reads/writes
-      yield { type: "usage", inputTokens, outputTokens, cacheWriteTokens, cacheReadTokens };
-      break;
+      {
+        const usage = chunk.message.usage
+        yield {
+          type: "usage",
+          inputTokens: usage.input_tokens || 0,
+          outputTokens: usage.output_tokens || 0,
+          cacheWriteTokens: usage.cache_creation_input_tokens || undefined,
+          cacheReadTokens: usage.cache_read_input_tokens || undefined,
+        }
+      }
+      break
     case "content_block_start":
       switch (chunk.content_block.type) {
         case "thinking":
-          yield { type: "reasoning", reasoning: chunk.content_block.thinking };
-          break;
+          yield {
+            type: "reasoning",
+            reasoning: chunk.content_block.thinking || "",
+            signature: chunk.content_block.signature,
+          }
+          break
         case "redacted_thinking":
-          yield { type: "reasoning", reasoning: "[Redacted]", redacted_data };
-          break;
+          yield {
+            type: "reasoning",
+            reasoning: "[Redacted thinking block]",
+            redacted_data: chunk.content_block.data,
+          }
+          break
         case "tool_use":
-          // Convert to internal tool format
-          break;
+          if (chunk.content_block.id && chunk.content_block.name) {
+            lastStartedToolCall.id = chunk.content_block.id
+            lastStartedToolCall.name = chunk.content_block.name
+            lastStartedToolCall.arguments = ""
+          }
+          break
         case "text":
-          yield { type: "text", text: chunk.content_block.text };
-          break;
+          if (chunk.index > 0) {
+            yield { type: "text", text: "\n" }
+          }
+          yield { type: "text", text: chunk.content_block.text }
+          break
       }
+      break
+    case "content_block_delta":
+      switch (chunk.delta.type) {
+        case "thinking_delta":
+          yield { type: "reasoning", reasoning: chunk.delta.thinking }
+          break
+        case "signature_delta":
+          if (chunk.delta.signature) {
+            yield { type: "reasoning", reasoning: "", signature: chunk.delta.signature }
+          }
+          break
+        case "text_delta":
+          yield { type: "text", text: chunk.delta.text }
+          break
+        case "input_json_delta":
+          // Convert Anthropic tool_use to OpenAI-compatible format
+          if (lastStartedToolCall.id && lastStartedToolCall.name && chunk.delta.partial_json) {
+            yield { type: "tool_calls", tool_call: { ...lastStartedToolCall, function: { ...lastStartedToolCall, arguments: chunk.delta.partial_json } } }
+          }
+          break
+      }
+      break
+    case "content_block_stop":
+      lastStartedToolCall.id = ""
+      lastStartedToolCall.name = ""
+      lastStartedToolCall.arguments = ""
+      break
   }
 }```
 
 
 
-> Handles thinking, redacted_thinking, text, and tool_use content blocks
+> Handles message_start (usage tracking with cache read/write tokens), content_block_start (thinking, redacted_thinking, tool_use, text), content_block_delta (thinking_delta, signature_delta, text_delta, input_json_delta), and content_block_stop (reset tool call state).
 
 
 

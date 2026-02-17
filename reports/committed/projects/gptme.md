@@ -143,7 +143,7 @@ Base64-encoded image support in message content blocks
 Native Anthropic web search tool integration
 
 
-**Source:** [`gptme/llm/llm_anthropic.py` L832-L896](https://github.com/ErikBjare/gptme/blob/f564bb70722589b4ee6d5aab9a815939832f7e24/gptme/llm/llm_anthropic.py#L832-L896)
+**Source:** [`gptme/llm/llm_anthropic.py` L832-L845](https://github.com/ErikBjare/gptme/blob/f564bb70722589b4ee6d5aab9a815939832f7e24/gptme/llm/llm_anthropic.py#L832-L845)
   • Function: `_create_web_search_tool`
 
 

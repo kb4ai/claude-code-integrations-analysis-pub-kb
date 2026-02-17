@@ -28,9 +28,9 @@ Stateless execution with 30-minute timeout. Single MCP tool interface.
 Spawns Claude Code CLI for each MCP tool invocation
 
 
-**Source:** [`src/claude-api.ts` L40-L95](https://github.com/steipete/claude-code-mcp/blob/24dfd389393cf35cc1390567bedda2d165756ef3/src/claude-api.ts#L40-L95)
-  • Function: `executeClaudeCode`
-
+**Source:** [`src/server.ts` L293-L300](https://github.com/steipete/claude-code-mcp/blob/24dfd389393cf35cc1390567bedda2d165756ef3/src/server.ts#L293-L300)
+  • Function: `setupToolHandlers`
+  • Class: `ClaudeCodeServer`
 
 
 
@@ -45,16 +45,14 @@ Spawns Claude Code CLI for each MCP tool invocation
 
 
 ```typescript
-const claudeProcess = spawn(claudeCommand, [
-  '--dangerously-skip-permissions',
-  '-p',
-  prompt,
-], {
-  shell: false,
-  stdio: ['ignore', 'pipe', 'pipe'],
-  cwd: workFolder || process.cwd(),
-  timeout: 30 * 60 * 1000, // 30 minutes
-});```
+const claudeProcessArgs = ['--dangerously-skip-permissions', '-p', prompt];
+debugLog(`[Debug] Invoking Claude CLI: ${this.claudeCliPath} ${claudeProcessArgs.join(' ')}`);
+
+const { stdout, stderr } = await spawnAsync(
+  this.claudeCliPath, // Run the Claude CLI directly
+  claudeProcessArgs, // Pass the arguments
+  { timeout: executionTimeoutMs, cwd: effectiveCwd }
+);```
 
 
 
@@ -77,8 +75,8 @@ const claudeProcess = spawn(claudeCommand, [
 Resolves Claude Code binary location
 
 
-**Source:** [`src/claude-api.ts` L10-L35](https://github.com/steipete/claude-code-mcp/blob/24dfd389393cf35cc1390567bedda2d165756ef3/src/claude-api.ts#L10-L35)
-  • Function: `findClaudeCommand`
+**Source:** [`src/server.ts` L46-L83](https://github.com/steipete/claude-code-mcp/blob/24dfd389393cf35cc1390567bedda2d165756ef3/src/server.ts#L46-L83)
+  • Function: `findClaudeCli`
 
 
 
@@ -86,18 +84,35 @@ Resolves Claude Code binary location
 
 
 ```typescript
-function findClaudeCommand(): string {
-  // 1. Check environment variable
-  if (process.env.CLAUDE_CLI_NAME) {
-    return process.env.CLAUDE_CLI_NAME;
+export function findClaudeCli(): string {
+  debugLog('[Debug] Attempting to find Claude CLI...');
+
+  // Check for custom CLI name from environment variable
+  const customCliName = process.env.CLAUDE_CLI_NAME;
+  if (customCliName) {
+    debugLog(`[Debug] Using custom Claude CLI name from CLAUDE_CLI_NAME: ${customCliName}`);
+
+    // If it's an absolute path, use it directly
+    if (path.isAbsolute(customCliName)) {
+      return customCliName;
+    }
+
+    // If it starts with ~ or ./, reject as relative paths are not allowed
+    if (customCliName.startsWith('./') || customCliName.startsWith('../') || customCliName.includes('/')) {
+      throw new Error(`Invalid CLAUDE_CLI_NAME: Relative paths are not allowed.`);
+    }
   }
-  // 2. Check default install location
-  const defaultPath = path.join(os.homedir(), '.claude', 'local', 'claude');
-  if (fs.existsSync(defaultPath)) {
-    return defaultPath;
+
+  const cliName = customCliName || 'claude';
+
+  // Try local install path: ~/.claude/local/claude
+  const userPath = join(homedir(), '.claude', 'local', 'claude');
+  if (existsSync(userPath)) {
+    return userPath;
   }
-  // 3. Fall back to PATH
-  return 'claude';
+
+  // Fallback to CLI name (PATH lookup)
+  return cliName;
 }```
 
 

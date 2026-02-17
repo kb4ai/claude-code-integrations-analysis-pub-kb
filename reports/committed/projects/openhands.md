@@ -49,12 +49,18 @@ Anthropic prompt caching with ephemeral cache_control breakpoints
 
 ```python
 def apply_prompt_caching(self, messages: list[Message]) -> None:
+    """Applies caching breakpoints to the messages.
+
+    For new Anthropic API, we only need to mark the last user or tool message as cacheable.
+    """
     if len(messages) > 0 and messages[0].role == 'system':
         messages[0].content[-1].cache_prompt = True
     # NOTE: this is only needed for anthropic
     for message in reversed(messages):
         if message.role in ('user', 'tool'):
-            message.content[-1].cache_prompt = True
+            message.content[
+                -1
+            ].cache_prompt = True  # Last item inside the message content
             break```
 
 
@@ -75,15 +81,21 @@ Claude-specific API parameter constraint handling
 
 
 ```python
-# Disable extended thinking for Opus 4.1
+# Explicitly disable Anthropic extended thinking for Opus 4.1 to avoid
+# requiring 'thinking' content blocks. See issue #10510.
 if 'claude-opus-4-1' in self.config.model.lower():
     kwargs['thinking'] = {'type': 'disabled'}
 
-# Opus 4.1, 4.5, and Sonnet 4 cannot accept both temperature and top_p
-if ('claude-opus-4-1' in _model_lower or 'claude-opus-4-5' in _model_lower
-    or 'claude-sonnet-4' in _model_lower):
-    if 'temperature' in kwargs and 'top_p' in kwargs:
-        kwargs.pop('top_p', None)```
+# Anthropic constraint: Opus 4.1, Opus 4.5, and Sonnet 4 models cannot accept both temperature and top_p
+# Prefer temperature (drop top_p) if both are specified.
+_model_lower = self.config.model.lower()
+# Apply to Opus 4.1, Opus 4.5, and Sonnet 4 models to avoid API errors
+if (
+    ('claude-opus-4-1' in _model_lower)
+    or ('claude-opus-4-5' in _model_lower)
+    or ('claude-sonnet-4' in _model_lower)
+) and ('temperature' in kwargs and 'top_p' in kwargs):
+    kwargs.pop('top_p', None)```
 
 
 
@@ -96,7 +108,7 @@ if ('claude-opus-4-1' in _model_lower or 'claude-opus-4-5' in _model_lower
 OpenHands provider proxy rewrites to litellm_proxy
 
 
-**Source:** [`openhands/llm/llm.py` L134-L141](https://github.com/All-Hands-AI/OpenHands/blob/0d13c57d9f9eaa69aebec2c12eef8806548c6ea2/openhands/llm/llm.py#L134-L141)
+**Source:** [`openhands/llm/llm.py` L136-L139](https://github.com/All-Hands-AI/OpenHands/blob/0d13c57d9f9eaa69aebec2c12eef8806548c6ea2/openhands/llm/llm.py#L136-L139)
 
 
 

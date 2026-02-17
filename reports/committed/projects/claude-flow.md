@@ -31,7 +31,7 @@ between agents. Phase-based execution with DAG dependency resolution.
 Primary spawn method for per-task Claude Code instances
 
 
-**Source:** [`v2/src/cli/simple-commands/automation-executor.js` L229-L275](https://github.com/ruvnet/claude-flow/blob/e82a79419c6a648a36de3529ab5d44a8a4d818a4/v2/src/cli/simple-commands/automation-executor.js#L229-L275)
+**Source:** [`v2/bin/automation-executor.js` L229-L275](https://github.com/ruvnet/claude-flow/blob/e82a79419c6a648a36de3529ab5d44a8a4d818a4/v2/bin/automation-executor.js#L229-L275)
   • Function: `spawnClaudeInstance`
 
 
@@ -93,7 +93,7 @@ async spawnClaudeInstance(agent, prompt, options = {}) {
 Sequential stream chaining between Claude instances
 
 
-**Source:** [`v2/src/cli/simple-commands/stream-chain.js` L49-L156](https://github.com/ruvnet/claude-flow/blob/e82a79419c6a648a36de3529ab5d44a8a4d818a4/v2/src/cli/simple-commands/stream-chain.js#L49-L156)
+**Source:** [`v2/bin/stream-chain.js` L49-L156](https://github.com/ruvnet/claude-flow/blob/e82a79419c6a648a36de3529ab5d44a8a4d818a4/v2/bin/stream-chain.js#L49-L156)
   • Function: `executeStep`
 
 
@@ -128,7 +128,7 @@ async function executeStep(prompt, previousContent, stepNum, totalSteps, flags) 
 Parses stream-json NDJSON output to extract text content
 
 
-**Source:** [`v2/src/cli/simple-commands/stream-chain.js` L24-L44](https://github.com/ruvnet/claude-flow/blob/e82a79419c6a648a36de3529ab5d44a8a4d818a4/v2/src/cli/simple-commands/stream-chain.js#L24-L44)
+**Source:** [`v2/bin/stream-chain.js` L24-L44](https://github.com/ruvnet/claude-flow/blob/e82a79419c6a648a36de3529ab5d44a8a4d818a4/v2/bin/stream-chain.js#L24-L44)
   • Function: `extractContentFromStream`
 
 

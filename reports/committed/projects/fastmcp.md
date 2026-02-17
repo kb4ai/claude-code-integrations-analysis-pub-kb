@@ -39,14 +39,14 @@ Converts MCP messages/tools to Anthropic format. Also provides CLI integration v
 MCP sampling protocol implementation via AsyncAnthropic
 
 
-**Source:** [`src/fastmcp/client/sampling/handlers/anthropic.py` L46-L121](https://github.com/jlowin/fastmcp/blob/806aa8c57985d5a0cdacfd9b22a2051e1a18a838/src/fastmcp/client/sampling/handlers/anthropic.py#L46-L121)
+**Source:** [`src/fastmcp/client/sampling/handlers/anthropic.py` L70-L121](https://github.com/jlowin/fastmcp/blob/806aa8c57985d5a0cdacfd9b22a2051e1a18a838/src/fastmcp/client/sampling/handlers/anthropic.py#L70-L121)
   • Function: `__call__`
   • Class: `AnthropicSamplingHandler`
 
 
 
 ```python
-kwargs = {
+kwargs: dict[str, Any] = {
     "model": model,
     "messages": anthropic_messages,
     "max_tokens": params.maxTokens,
@@ -55,10 +55,13 @@ if params.systemPrompt is not None:
     kwargs["system"] = params.systemPrompt
 if params.temperature is not None:
     kwargs["temperature"] = params.temperature
+if params.stopSequences is not None:
+    kwargs["stop_sequences"] = params.stopSequences
 if anthropic_tools is not None:
     kwargs["tools"] = anthropic_tools
 if anthropic_tool_choice is not None:
     kwargs["tool_choice"] = anthropic_tool_choice
+
 response = await self.client.messages.create(**kwargs)```
 
 
@@ -106,10 +109,25 @@ Exposes ~/.claude/skills/ as MCP resources via skill:// URI scheme
 
 ```python
 class ClaudeSkillsProvider(SkillsDirectoryProvider):
-    # Hardcoded root: ~/.claude/skills/
-    # Exposes skills as MCP resources via skill:// URI scheme
-    # Supports progressive disclosure via frontmatter metadata
-    pass```
+    """Provider for Claude Code skills from ~/.claude/skills/.
+
+    A convenience subclass that sets the default root to Claude's skills location.
+    ...
+    """
+
+    def __init__(
+        self,
+        reload: bool = False,
+        supporting_files: Literal["template", "resources"] = "template",
+    ) -> None:
+        root = Path.home() / ".claude" / "skills"
+
+        super().__init__(
+            roots=[root],
+            reload=reload,
+            main_file_name="SKILL.md",
+            supporting_files=supporting_files,
+        )```
 
 
 

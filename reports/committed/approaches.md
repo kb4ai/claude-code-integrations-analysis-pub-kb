@@ -1,6 +1,6 @@
 # Claude Code Integration Approaches
 
-*Generated: 2026-02-08*
+*Generated: 2026-02-17*
 
 A practical reference to every integration approach discovered across 12 open-source projects.
 

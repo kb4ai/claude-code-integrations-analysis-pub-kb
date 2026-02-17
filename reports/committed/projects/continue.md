@@ -49,16 +49,27 @@ SSE-based streaming with direct HTTP fetch to Anthropic API
 
 
 ```typescript
+const headers = getAnthropicHeaders(
+  this.apiKey,
+  shouldCacheSystemMessage || shouldCachePrompt,
+  this.apiBase,
+);
+
+const body: MessageCreateParams = {
+  ...this.convertArgs(options),
+  messages: msgs,
+  system: shouldCacheSystemMessage
+    ? [{ type: "text", text: systemMessage, cache_control: { type: "ephemeral" } }]
+    : systemMessage,
+};
+
 const response = await this.fetch(new URL("messages", this.apiBase), {
   method: "POST",
-  headers: getAnthropicHeaders(this.apiKey, shouldCachePrompt, this.apiBase),
-  body: JSON.stringify({
-    ...this.convertArgs(options),
-    messages: msgs,
-    system: shouldCacheSystemMessage ? [...] : systemMessage,
-  }),
+  headers,
+  body: JSON.stringify(body),
   signal,
 });
+
 yield* this.handleResponse(response, options.stream);```
 
 
@@ -72,24 +83,36 @@ yield* this.handleResponse(response, options.stream);```
 4 caching strategies: no cache, system only, system+tools, optimized
 
 
-**Source:** [`packages/openai-adapters/src/apis/AnthropicCachingStrategies.ts` L1-L100](https://github.com/continuedev/continue/blob/d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550/packages/openai-adapters/src/apis/AnthropicCachingStrategies.ts#L1-L100)
+**Source:** [`packages/openai-adapters/src/apis/AnthropicCachingStrategies.ts` L37-L71](https://github.com/continuedev/continue/blob/d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550/packages/openai-adapters/src/apis/AnthropicCachingStrategies.ts#L37-L71)
 
 
 
 
 
 ```typescript
-// System + tools strategy
+// Strategy 3: System and Tools (High Impact)
 const systemAndToolsStrategy: CachingStrategy = (body) => {
+  const result = { ...body };
+  let availableCacheMessages = MAX_CACHING_MESSAGES;
+  // Cache system messages
   if (result.system && Array.isArray(result.system)) {
-    result.system = result.system.map((item) => ({
-      ...item, cache_control: { type: "ephemeral" },
-    }));
+    result.system = result.system.map((item) => {
+      if (availableCacheMessages > 0) {
+        availableCacheMessages -= 1;
+        return { ...item, cache_control: { type: "ephemeral" } };
+      }
+      return item;
+    });
   }
-  if (result.tools?.length > 0) {
-    result.tools[result.tools.length - 1] = {
-      ...lastTool, cache_control: { type: "ephemeral" },
-    };
+  // Cache tool definitions
+  if (result.tools && Array.isArray(result.tools) && result.tools.length > 0) {
+    result.tools = result.tools.map((tool, index: number) => {
+      if (index === result.tools!.length - 1 && availableCacheMessages > 0) {
+        availableCacheMessages -= 1;
+        return { ...tool, cache_control: { type: "ephemeral" } };
+      }
+      return tool;
+    });
   }
   return result;
 };```
@@ -128,7 +151,7 @@ thinking: options.reasoning ? {
 Detects Azure-hosted Anthropic endpoints and adjusts auth headers
 
 
-**Source:** [`packages/openai-adapters/src/apis/AnthropicUtils.ts` L37-L94](https://github.com/continuedev/continue/blob/d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550/packages/openai-adapters/src/apis/AnthropicUtils.ts#L37-L94)
+**Source:** [`packages/openai-adapters/src/apis/AnthropicUtils.ts` L48-L94](https://github.com/continuedev/continue/blob/d585c3b8e8d49f7ef2df7a1ff7463caf1d1c9550/packages/openai-adapters/src/apis/AnthropicUtils.ts#L48-L94)
   • Function: `isAzureAnthropicEndpoint`
 
 
@@ -136,11 +159,17 @@ Detects Azure-hosted Anthropic endpoints and adjusts auth headers
 
 ```typescript
 export function isAzureAnthropicEndpoint(apiBase?: string): boolean {
-  const hostname = url.hostname.toLowerCase();
-  return hostname.endsWith(".services.ai.azure.com") ||
-         hostname.endsWith(".cognitiveservices.azure.com");
+  if (!apiBase) { return false; }
+  try {
+    const url = new URL(apiBase);
+    const hostname = url.hostname.toLowerCase();
+    return (
+      hostname.endsWith(".services.ai.azure.com") ||
+      hostname.endsWith(".cognitiveservices.azure.com")
+    );
+  } catch { return false; }
 }
-// Uses "api-key" header for Azure, "x-api-key" for Anthropic```
+// getAnthropicHeaders (line 66): uses "api-key" for Azure, "x-api-key" for Anthropic```
 
 
 

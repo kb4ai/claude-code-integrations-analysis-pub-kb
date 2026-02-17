@@ -38,37 +38,29 @@ system prompts, and session management. Plugin installation uses CLI subprocess.
 Primary Claude Code interaction via query() async iterator
 
 
-**Source:** [`src/claude.ts` L50-L120](https://github.com/anthropics/claude-code-action/blob/db388438c199401cf36c143bb877ba3c3e6a9be5/src/claude.ts#L50-L120)
-  • Function: `runClaude`
+**Source:** [`base-action/src/run-claude-sdk.ts` L136-L244](https://github.com/anthropics/claude-code-action/blob/db388438c199401cf36c143bb877ba3c3e6a9be5/base-action/src/run-claude-sdk.ts#L136-L244)
+  • Function: `runClaudeWithSdk`
 
 
 
 
 ```typescript
-const messages = query({
-  model: config.model,
-  maxTurns: config.maxTurns,
-  allowedTools: config.allowedTools,
-  disallowedTools: config.disallowedTools,
-  systemPrompt: config.systemPrompt,
-  fallbackModel: config.fallbackModel,
-  prompt: userPrompt,
-  env: {
-    ...process.env,
-    ANTHROPIC_API_KEY: config.apiKey,
-  },
-});
+for await (const message of query({ prompt, options: sdkOptions })) {
+  messages.push(message);
 
-for await (const message of messages) {
-  if (message.type === 'system' && message.subtype === 'init') {
-    sessionId = message.session_id;
+  const sanitized = sanitizeSdkOutput(message, showFullOutput);
+  if (sanitized) {
+    console.log(sanitized);
   }
-  // Process assistant messages, tool calls, results
+
+  if (message.type === "result") {
+    resultMessage = message as SDKResultMessage;
+  }
 }```
 
 
 
-> Async iterator pattern - yields messages in real-time. Session ID extracted from system.init message. Supports both tag mode (@claude) and full agent mode.
+> Async iterator pattern - yields SDKMessage objects in real-time. Options built via parseSdkOptions() in base-action/src/parse-sdk-options.ts. Session ID extracted post-loop via messages.find() on system.init message. Supports both tag mode (@claude) and full agent mode.
 
 
 
@@ -77,21 +69,29 @@ for await (const message of messages) {
 Plugin installation via Claude CLI subprocess
 
 
-**Source:** [`src/plugins.ts` L10-L40](https://github.com/anthropics/claude-code-action/blob/db388438c199401cf36c143bb877ba3c3e6a9be5/src/plugins.ts#L10-L40)
+**Source:** [`base-action/src/install-plugins.ts` L171-L182](https://github.com/anthropics/claude-code-action/blob/db388438c199401cf36c143bb877ba3c3e6a9be5/base-action/src/install-plugins.ts#L171-L182)
   • Function: `installPlugin`
 
 
 
 
 ```typescript
-// Plugin installation uses CLI directly
-execSync(`claude plugin install ${pluginName}`, {
-  env: { ...process.env, ANTHROPIC_API_KEY: apiKey },
-});```
+async function installPlugin(
+  pluginName: string,
+  claudeExecutable: string,
+): Promise<void> {
+  console.log(`Installing plugin: ${pluginName}`);
+
+  return executeClaudeCommand(
+    claudeExecutable,
+    ["plugin", "install", pluginName],
+    `Failed to install plugin '${pluginName}'`,
+  );
+}```
 
 
 
-> Hybrid approach: SDK for queries, CLI for plugin management
+> Hybrid approach: SDK for queries, CLI spawn for plugin management. Uses child_process.spawn (not execSync) via executeClaudeCommand helper. Also supports marketplace add via addMarketplace() (lines 191-202). Exported installPlugins() (lines 212-243) orchestrates marketplace + plugin setup.
 
 
 
@@ -100,23 +100,25 @@ execSync(`claude plugin install ${pluginName}`, {
 Extracts session ID from system.init message
 
 
-**Source:** [`src/claude.ts` L85-L100](https://github.com/anthropics/claude-code-action/blob/db388438c199401cf36c143bb877ba3c3e6a9be5/src/claude.ts#L85-L100)
-  • Function: `runClaude`
+**Source:** [`base-action/src/run-claude-sdk.ts` L191-L198](https://github.com/anthropics/claude-code-action/blob/db388438c199401cf36c143bb877ba3c3e6a9be5/base-action/src/run-claude-sdk.ts#L191-L198)
+  • Function: `runClaudeWithSdk`
 
 
 
 
 ```typescript
-for await (const message of messages) {
-  if (message.type === 'system' && message.subtype === 'init') {
-    sessionId = message.session_id;
-    // session_id used for conversation continuity
-  }
+// Extract session_id from system.init message
+const initMessage = messages.find(
+  (m) => m.type === "system" && "subtype" in m && m.subtype === "init",
+);
+if (initMessage && "session_id" in initMessage && initMessage.session_id) {
+  result.sessionId = initMessage.session_id as string;
+  core.info(`Set session_id: ${result.sessionId}`);
 }```
 
 
 
-> Session ID enables resume capability across GitHub Action runs
+> Session ID extracted post-loop via Array.find() on collected messages. Exposed as GitHub Action output via core.setOutput in base-action/src/index.ts (line 52). Enables resume capability across GitHub Action runs.
 
 
 
