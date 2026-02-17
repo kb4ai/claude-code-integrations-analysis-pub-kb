@@ -17,7 +17,7 @@ invocations:
     reference:
       repository: "https://github.com/ruvnet/claude-flow"
       commit: "e82a79419c6a648a36de3529ab5d44a8a4d818a4"
-      path: "v2/src/cli/simple-commands/automation-executor.js"
+      path: "v2/bin/automation-executor.js"
       lines: [229, 275]
       function: "spawnClaudeInstance"
       language: "javascript"
@@ -92,7 +92,7 @@ invocations:
     reference:
       repository: "https://github.com/ruvnet/claude-flow"
       commit: "e82a79419c6a648a36de3529ab5d44a8a4d818a4"
-      path: "v2/src/cli/simple-commands/stream-chain.js"
+      path: "v2/bin/stream-chain.js"
       lines: [49, 156]
       function: "executeStep"
       language: "javascript"
@@ -121,7 +121,7 @@ invocations:
     reference:
       repository: "https://github.com/ruvnet/claude-flow"
       commit: "e82a79419c6a648a36de3529ab5d44a8a4d818a4"
-      path: "v2/src/cli/simple-commands/stream-chain.js"
+      path: "v2/bin/stream-chain.js"
       lines: [24, 44]
       function: "extractContentFromStream"
       language: "javascript"

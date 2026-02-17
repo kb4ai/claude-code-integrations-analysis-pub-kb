@@ -15,9 +15,29 @@ sdks_used:
     version_constraint: ">=0.40.0"
     import_reference:
       path: "src/fastmcp/client/sampling/handlers/anthropic.py"
-      lines: [1, 10]
+      lines: [20, 41]
       snippet: |
-        from anthropic import AsyncAnthropic
+        try:
+            from anthropic import AsyncAnthropic
+            from anthropic.types import (
+                Message,
+                MessageParam,
+                TextBlock,
+                TextBlockParam,
+                ToolParam,
+                ToolResultBlockParam,
+                ToolUseBlock,
+                ToolUseBlockParam,
+            )
+            from anthropic.types.model_param import ModelParam
+            from anthropic.types.tool_choice_any_param import ToolChoiceAnyParam
+            from anthropic.types.tool_choice_auto_param import ToolChoiceAutoParam
+            from anthropic.types.tool_choice_param import ToolChoiceParam
+        except ImportError as e:
+            raise ImportError(
+                "The `anthropic` package is not installed. "
+                "Install it with `pip install fastmcp[anthropic]` or add `anthropic` to your dependencies."
+            ) from e
 
 sdk_usage:
 
@@ -30,7 +50,7 @@ sdk_usage:
       repository: "https://github.com/jlowin/fastmcp"
       commit: "806aa8c57985d5a0cdacfd9b22a2051e1a18a838"
       path: "src/fastmcp/client/sampling/handlers/anthropic.py"
-      lines: [46, 121]
+      lines: [70, 121]
       function: "__call__"
       class: "AnthropicSamplingHandler"
       language: "python"
@@ -52,6 +72,9 @@ sdk_usage:
       - name: "system"
         value_type: "string"
         purpose: "System prompt (optional)"
+      - name: "stop_sequences"
+        value_type: "list"
+        purpose: "Stop sequences (optional)"
       - name: "tools"
         value_type: "list"
         purpose: "Converted MCP tools to Anthropic format"
@@ -60,7 +83,7 @@ sdk_usage:
         purpose: "Tool choice mapping (auto→auto, required→any, none→omit)"
 
     snippet: |
-      kwargs = {
+      kwargs: dict[str, Any] = {
           "model": model,
           "messages": anthropic_messages,
           "max_tokens": params.maxTokens,
@@ -69,10 +92,13 @@ sdk_usage:
           kwargs["system"] = params.systemPrompt
       if params.temperature is not None:
           kwargs["temperature"] = params.temperature
+      if params.stopSequences is not None:
+          kwargs["stop_sequences"] = params.stopSequences
       if anthropic_tools is not None:
           kwargs["tools"] = anthropic_tools
       if anthropic_tool_choice is not None:
           kwargs["tool_choice"] = anthropic_tool_choice
+
       response = await self.client.messages.create(**kwargs)
 
     notes: |
@@ -120,10 +146,25 @@ sdk_usage:
 
     snippet: |
       class ClaudeSkillsProvider(SkillsDirectoryProvider):
-          # Hardcoded root: ~/.claude/skills/
-          # Exposes skills as MCP resources via skill:// URI scheme
-          # Supports progressive disclosure via frontmatter metadata
-          pass
+          """Provider for Claude Code skills from ~/.claude/skills/.
+
+          A convenience subclass that sets the default root to Claude's skills location.
+          ...
+          """
+
+          def __init__(
+              self,
+              reload: bool = False,
+              supporting_files: Literal["template", "resources"] = "template",
+          ) -> None:
+              root = Path.home() / ".claude" / "skills"
+
+              super().__init__(
+                  roots=[root],
+                  reload=reload,
+                  main_file_name="SKILL.md",
+                  supporting_files=supporting_files,
+              )
 
     notes: "skill://{skill_name}/SKILL.md and skill://{skill_name}/_manifest URIs"
 

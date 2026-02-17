@@ -16,18 +16,20 @@ sdks_used:
     version_constraint: ">=1.74.3,!=1.64.4,!=1.67.*"
     import_reference:
       path: "openhands/llm/llm.py"
-      lines: [1, 20]
+      lines: [22, 24]
       snippet: |
-        import litellm
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            import litellm
 
   - name: "anthropic-python"
     package: "anthropic[vertex]"
     version_constraint: "*"
     import_reference:
       path: "pyproject.toml"
-      lines: [163, 163]
+      lines: [233, 233]
       snippet: |
-        anthropic = { extras = ["vertex"], version = "*" }
+        anthropic = { extras = [ "vertex" ], version = "*" }
 
 sdk_usage:
 
@@ -46,12 +48,18 @@ sdk_usage:
 
     snippet: |
       def apply_prompt_caching(self, messages: list[Message]) -> None:
+          """Applies caching breakpoints to the messages.
+
+          For new Anthropic API, we only need to mark the last user or tool message as cacheable.
+          """
           if len(messages) > 0 and messages[0].role == 'system':
               messages[0].content[-1].cache_prompt = True
           # NOTE: this is only needed for anthropic
           for message in reversed(messages):
               if message.role in ('user', 'tool'):
-                  message.content[-1].cache_prompt = True
+                  message.content[
+                      -1
+                  ].cache_prompt = True  # Last item inside the message content
                   break
 
     notes: "Two breakpoints: system message + last user/tool message. Anthropic-specific."
@@ -71,15 +79,21 @@ sdk_usage:
       language: "python"
 
     snippet: |
-      # Disable extended thinking for Opus 4.1
+      # Explicitly disable Anthropic extended thinking for Opus 4.1 to avoid
+      # requiring 'thinking' content blocks. See issue #10510.
       if 'claude-opus-4-1' in self.config.model.lower():
           kwargs['thinking'] = {'type': 'disabled'}
 
-      # Opus 4.1, 4.5, and Sonnet 4 cannot accept both temperature and top_p
-      if ('claude-opus-4-1' in _model_lower or 'claude-opus-4-5' in _model_lower
-          or 'claude-sonnet-4' in _model_lower):
-          if 'temperature' in kwargs and 'top_p' in kwargs:
-              kwargs.pop('top_p', None)
+      # Anthropic constraint: Opus 4.1, Opus 4.5, and Sonnet 4 models cannot accept both temperature and top_p
+      # Prefer temperature (drop top_p) if both are specified.
+      _model_lower = self.config.model.lower()
+      # Apply to Opus 4.1, Opus 4.5, and Sonnet 4 models to avoid API errors
+      if (
+          ('claude-opus-4-1' in _model_lower)
+          or ('claude-opus-4-5' in _model_lower)
+          or ('claude-sonnet-4' in _model_lower)
+      ) and ('temperature' in kwargs and 'top_p' in kwargs):
+          kwargs.pop('top_p', None)
 
     notes: "Extended thinking disabled for Opus 4.1. top_p dropped when temperature set for Claude 4+ models"
 
@@ -92,7 +106,7 @@ sdk_usage:
       repository: "https://github.com/All-Hands-AI/OpenHands"
       commit: "0d13c57d9f9eaa69aebec2c12eef8806548c6ea2"
       path: "openhands/llm/llm.py"
-      lines: [134, 141]
+      lines: [136, 139]
       language: "python"
 
     snippet: |

@@ -17,9 +17,11 @@ sdks_used:
     version_constraint: "*"
     import_reference:
       path: "alpha_codium/llm/ai_handler.py"
-      lines: [4, 5]
+      lines: [4, 7]
       snippet: |
         import litellm
+        import openai
+        from aiolimiter import AsyncLimiter
         from litellm import acompletion
 
 sdk_usage:
@@ -85,21 +87,27 @@ sdk_usage:
       repository: "https://github.com/Codium-ai/AlphaCodium"
       commit: "eb7577dbe998ae7e55696264591ac3c5dde75638"
       path: "alpha_codium/llm/ai_invoker.py"
-      lines: [8, 49]
+      lines: [8, 23]
       function: "send_inference"
       language: "python"
 
     snippet: |
-      all_models = _get_all_models()
-      all_deployments = _get_all_deployments(all_models)
-      for i, (model, deployment_id) in enumerate(zip(all_models, all_deployments)):
-          try:
-              get_settings().set("openai.deployment_id", deployment_id)
-              return await f(model)
-          except Exception:
-              logging.warning(f"Failed to generate prediction with {model}...")
-              if i == len(all_models) - 1:
-                  raise
+      async def send_inference(f: Callable):
+          all_models = _get_all_models()
+          all_deployments = _get_all_deployments(all_models)
+          # try each (model, deployment_id) pair until one is successful, otherwise raise exception
+          for i, (model, deployment_id) in enumerate(zip(all_models, all_deployments)):
+              try:
+                  get_settings().set("openai.deployment_id", deployment_id)
+                  return await f(model)
+              except Exception:
+                  logging.warning(
+                      f"Failed to generate prediction with {model}"
+                      f"{(' from deployment ' + deployment_id) if deployment_id else ''}: "
+                      f"{traceback.format_exc()}"
+                  )
+                  if i == len(all_models) - 1:  # If it's the last iteration
+                      raise  # Re-raise the last exception
 
     notes: |
       Supports fallback_models config for cascading through multiple models.

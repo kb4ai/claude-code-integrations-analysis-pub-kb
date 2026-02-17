@@ -18,9 +18,9 @@ invocations:
     reference:
       repository: "https://github.com/block/goose"
       commit: "b18120bec310365d96cafcc34ea63d8534e3ee57"
-      path: "crates/goose-llm/src/claude_code_provider.rs"
-      lines: [1, 80]
-      function: "start_process"
+      path: "crates/goose/src/providers/claude_code.rs"
+      lines: [278, 298]
+      function: "execute_command"
       class: "ClaudeCodeProvider"
       language: "rust"
 
@@ -46,55 +46,63 @@ invocations:
 
       - flag: "--system-prompt"
         value_type: "string"
-        purpose: "Pass custom system prompt for agent behavior"
+        purpose: "Pass custom system prompt for agent behavior (filtered to remove extensions)"
         checklist_ref: "cli-flags.checklist.yaml#system-prompt"
 
       - flag: "--model"
         value_type: "string"
-        purpose: "Model selection - only passed for 'sonnet' or 'opus' values"
+        purpose: "Model selection - only passed for values in CLAUDE_CODE_KNOWN_MODELS ('sonnet', 'opus')"
         checklist_ref: "cli-flags.checklist.yaml#model"
 
       - flag: "--dangerously-skip-permissions"
         value_type: "flag"
-        purpose: "Auto-approve all operations when GOOSE_MODE=auto"
+        purpose: "Auto-approve all operations when GooseMode::Auto"
         checklist_ref: "cli-flags.checklist.yaml#dangerously-skip-permissions"
 
       - flag: "--permission-mode"
         value_type: "string"
         value_options: ["acceptEdits"]
-        purpose: "Accept edits mode when GOOSE_MODE=smart-approve"
+        purpose: "Accept edits mode when GooseMode::SmartApprove"
         checklist_ref: "cli-flags.checklist.yaml#permission-mode"
 
     snippet: |
-      // Spawns Claude Code as persistent subprocess
-      let mut cmd = Command::new(claude_code_command);
-      cmd.arg("--input-format").arg("stream-json")
-         .arg("--output-format").arg("stream-json")
-         .arg("--verbose")
-         .arg("--system-prompt").arg(&system_prompt);
+      // In execute_command(), lines 278-298: lazy spawn via OnceCell
+      let mut cmd = Command::new(&self.command);
+      // NO -p flag — persistent mode
+      configure_command_no_window(&mut cmd);
+      cmd.arg("--input-format")
+          .arg("stream-json")
+          .arg("--output-format")
+          .arg("stream-json")
+          .arg("--verbose")
+          .arg("--system-prompt")
+          .arg(&filtered_system);
 
-      // Model selection - only for specific values
-      if model == "sonnet" || model == "opus" {
-          cmd.arg("--model").arg(&model);
+      // Only pass model parameter if it's in the known models list
+      if CLAUDE_CODE_KNOWN_MODELS.contains(&self.model.model_name.as_str()) {
+          cmd.arg("--model").arg(&self.model.model_name);
       }
 
-      // Permission mode mapping from GOOSE_MODE
-      match goose_mode.as_str() {
-          "auto" => { cmd.arg("--dangerously-skip-permissions"); }
-          "smart-approve" => { cmd.arg("--permission-mode").arg("acceptEdits"); }
-          _ => {}
-      }
+      // Add permission mode based on GOOSE_MODE setting
+      Self::apply_permission_flags(&mut cmd)?;
+
+      // apply_permission_flags (lines 122-147) maps GooseMode enum:
+      // GooseMode::Auto => --dangerously-skip-permissions
+      // GooseMode::SmartApprove => --permission-mode acceptEdits
+      // GooseMode::Approve => error (not supported)
+      // GooseMode::Chat => no flags
 
     environment_variables:
       - name: "CLAUDE_CODE_COMMAND"
-        purpose: "Override Claude Code binary path (default: 'claude')"
+        purpose: "Override Claude Code binary path (default: 'claude') - resolved via Config::get_claude_code_command()"
       - name: "GOOSE_MODE"
-        purpose: "Maps to CLI permission flags: auto→--dangerously-skip-permissions, smart-approve→--permission-mode acceptEdits"
+        purpose: "Maps to CLI permission flags via GooseMode enum: Auto→--dangerously-skip-permissions, SmartApprove→--permission-mode acceptEdits"
 
     notes: |
       Unique persistent process pattern: Unlike claude-code-mcp which spawns per-request,
-      Goose keeps a long-running Claude process and sends NDJSON messages via stdin.
-      Default model is claude-sonnet-4-20250514.
+      Goose keeps a long-running Claude process via OnceCell (spawned exactly once on first call)
+      and sends NDJSON messages via stdin. Default model is claude-sonnet-4-20250514.
+      The apply_permission_flags helper (lines 122-147) handles GooseMode mapping.
 
   - id: ndjson-input-protocol
     description: "Sends user messages as NDJSON objects to Claude stdin"
@@ -102,27 +110,39 @@ invocations:
     reference:
       repository: "https://github.com/block/goose"
       commit: "b18120bec310365d96cafcc34ea63d8534e3ee57"
-      path: "crates/goose-llm/src/claude_code_provider.rs"
-      lines: [85, 120]
-      function: "send_message"
+      path: "crates/goose/src/providers/claude_code.rs"
+      lines: [351, 362]
+      function: "execute_command"
       class: "ClaudeCodeProvider"
       language: "rust"
 
     command_pattern: "stdin NDJSON: {\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[...]}}"
 
     snippet: |
-      // Each message is a single JSON line written to stdin
-      let msg = json!({
-          "type": "user",
-          "message": {
-              "role": "user",
-              "content": content_blocks
-          }
-      });
-      stdin.write_all(serde_json::to_string(&msg)?.as_bytes())?;
-      stdin.write_all(b"\n")?;
+      // build_stream_json_input (free function, lines 459-462) constructs the JSON:
+      fn build_stream_json_input(content_blocks: &[Value]) -> String {
+          let msg = json!({"type":"user","message":{"role":"user","content":content_blocks}});
+          serde_json::to_string(&msg).expect("serializing JSON content blocks cannot fail")
+      }
 
-    notes: "Bidirectional NDJSON protocol - each line is a complete JSON object"
+      // In execute_command(), lines 351-362: write NDJSON line to stdin
+      let ndjson_line = build_stream_json_input(&new_blocks);
+      process
+          .stdin
+          .write_all(ndjson_line.as_bytes())
+          .await
+          .map_err(|e| {
+              ProviderError::RequestFailed(format!("Failed to write to stdin: {}", e))
+          })?;
+      process.stdin.write_all(b"\n").await.map_err(|e| {
+          ProviderError::RequestFailed(format!("Failed to write newline to stdin: {}", e))
+      })?;
+
+    notes: |
+      Bidirectional NDJSON protocol - each line is a complete JSON object.
+      build_stream_json_input() is a free function (lines 459-462) that serializes the message.
+      Content blocks are built by messages_to_content_blocks() (lines 73-120), which supports
+      text, image (base64), tool_request, and tool_response message types.
 
   - id: ndjson-response-parsing
     description: "Parses Claude stdout NDJSON for assistant/result/error events"
@@ -130,34 +150,74 @@ invocations:
     reference:
       repository: "https://github.com/block/goose"
       commit: "b18120bec310365d96cafcc34ea63d8534e3ee57"
-      path: "crates/goose-llm/src/claude_code_provider.rs"
-      lines: [125, 180]
-      function: "read_response"
+      path: "crates/goose/src/providers/claude_code.rs"
+      lines: [150, 253]
+      function: "parse_claude_response"
       class: "ClaudeCodeProvider"
       language: "rust"
 
     snippet: |
-      // Parse each line from stdout as JSON event
-      for line in reader.lines() {
-          let event: Value = serde_json::from_str(&line?)?;
-          match event["type"].as_str() {
-              Some("assistant") => {
-                  // Extract message content from assistant response
-                  let message = &event["message"];
-                  // Process content blocks (text, tool_use, etc.)
-              }
-              Some("result") => {
-                  // Final result with cost, duration, session_id
-                  break;
-              }
-              Some("error") => {
-                  // Handle error events
-              }
-              _ => {} // Skip unknown event types
-          }
-      }
+      fn parse_claude_response(
+          &self,
+          json_lines: &[String],
+      ) -> Result<(Message, Usage), ProviderError> {
+          let mut all_text_content = Vec::new();
+          let mut usage = Usage::default();
 
-    notes: "Three event types: assistant (content), result (final), error"
+          for line in json_lines {
+              if let Ok(parsed) = serde_json::from_str::<Value>(line) {
+                  match parsed.get("type").and_then(|t| t.as_str()) {
+                      Some("assistant") => {
+                          if let Some(message) = parsed.get("message") {
+                              // Extract text content from this assistant message
+                              if let Some(content) = message.get("content").and_then(|c| c.as_array())
+                              {
+                                  for item in content {
+                                      if item.get("type").and_then(|t| t.as_str()) == Some("text") {
+                                          if let Some(text) =
+                                              item.get("text").and_then(|t| t.as_str())
+                                          {
+                                              all_text_content.push(text.to_string());
+                                          }
+                                      }
+                                      // Skip tool_use - those are claude CLI's internal tools
+                                  }
+                              }
+                              // Extract usage information from message.usage
+                          }
+                      }
+                      Some("result") => {
+                          // Extract additional usage info from result if available
+                      }
+                      Some("error") => {
+                          let error_msg = parsed
+                              .get("error")
+                              .and_then(|e| e.as_str())
+                              .unwrap_or("Unknown error");
+                          if error_msg.contains("context") && error_msg.contains("exceeded") {
+                              return Err(ProviderError::ContextLengthExceeded(
+                                  error_msg.to_string(),
+                              ));
+                          }
+                          return Err(ProviderError::RequestFailed(format!(
+                              "Claude CLI error: {}",
+                              error_msg
+                          )));
+                      }
+                      Some("system") => {} // Ignore system init events
+                      _ => {}              // Ignore other event types
+                  }
+              }
+          }
+          // Combine all text content into a single message with "\n\n" separator
+          let combined_text = all_text_content.join("\n\n");
+          // ...returns (Message, Usage)
+
+    notes: |
+      Four event types handled: assistant (content), result (final usage), error, system (ignored).
+      Lines are collected first by execute_command() (lines 364-400) which reads stdout until
+      a "result" or "error" event, then passed to parse_claude_response for extraction.
+      Error handling distinguishes context length exceeded from other errors.
 
 # Summary of all flags used
 flags_summary:

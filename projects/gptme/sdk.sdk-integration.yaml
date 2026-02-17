@@ -17,7 +17,7 @@ sdks_used:
     version_constraint: "^0.47"
     import_reference:
       path: "gptme/llm/llm_anthropic.py"
-      lines: [1, 10]
+      lines: [305, 305]
       snippet: |
         from anthropic import NOT_GIVEN, Anthropic  # fmt: skip
 
@@ -160,7 +160,7 @@ sdk_usage:
       repository: "https://github.com/ErikBjare/gptme"
       commit: "f564bb70722589b4ee6d5aab9a815939832f7e24"
       path: "gptme/llm/llm_anthropic.py"
-      lines: [832, 896]
+      lines: [832, 845]
       function: "_create_web_search_tool"
       language: "python"
 
